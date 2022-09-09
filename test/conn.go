@@ -4,6 +4,7 @@ import (
 	"net"
 	"sync"
 	"testing"
+	"time"
 )
 
 // taken from https://speakerdeck.com/mitchellh/advanced-testing-with-go?slide=37
@@ -34,5 +35,10 @@ func Conn(t *testing.T) (client, server net.Conn) {
 	}
 
 	wg.Wait()
+	// configure some upper limit deadline for tests
+	now := time.Now()
+	for _, conn := range []net.Conn{client, server} {
+		conn.SetDeadline(now.Add(3 * time.Second))
+	}
 	return client, server
 }

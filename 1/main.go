@@ -53,10 +53,10 @@ func handleConn(conn net.Conn) {
 			}
 			continue
 		}
+		log.Printf("received: %+v", input)
 		if !input.IsValid() {
 			continue
 		}
-		log.Printf("received: %+v", input)
 
 		// Note that non-integers can not be prime.
 		n, err := input.Number.Int64()
@@ -75,7 +75,7 @@ func handleConn(conn net.Conn) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("reading standard input: %v", err)
+		log.Printf("scanning input: %v", err)
 	}
 }
 
