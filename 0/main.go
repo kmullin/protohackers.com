@@ -3,6 +3,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"io"
 	"log"
 	"net"
@@ -21,15 +23,22 @@ func main() {
 			log.Printf("accept err: %v", err)
 			continue
 		}
-		go handleConnection(conn)
+		go echo(conn)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+func echo(conn net.Conn) {
 	defer func() {
 		conn.Close()
 		log.Printf("closed %s", conn.RemoteAddr())
 	}()
 	log.Printf("connected %s", conn.RemoteAddr())
-	io.Copy(conn, conn)
+
+	var buf bytes.Buffer
+	enc := base64.NewEncoder(base64.StdEncoding, &buf)
+	w := io.MultiWriter(conn, enc)
+	io.Copy(w, conn)
+
+	enc.Close()
+	log.Printf("data received: %v", buf.String())
 }
