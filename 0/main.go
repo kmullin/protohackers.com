@@ -37,8 +37,11 @@ func echo(conn net.Conn) {
 	var buf bytes.Buffer
 	enc := base64.NewEncoder(base64.StdEncoding, &buf)
 	w := io.MultiWriter(conn, enc)
-	io.Copy(w, conn)
+	n, err := io.Copy(w, conn)
+	if err != nil {
+		log.Printf("err in copy: %v", err)
+	}
 
 	enc.Close()
-	log.Printf("data received: %v", buf.String())
+	log.Printf("data received %d: %v", n, buf.String())
 }
