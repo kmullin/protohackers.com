@@ -2,40 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"reflect"
-	"sync"
 	"testing"
+
+	"git.kpmullin.com/kmullin/protocolhackers.com/test"
 )
-
-func testServer(t *testing.T) (client, server net.Conn) {
-	t.Helper()
-
-	var err error
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer ln.Close()
-		server, err = ln.Accept()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
-	client, err = net.Dial("tcp", ln.Addr().String())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wg.Wait()
-	return client, server
-}
 
 func TestEcho(t *testing.T) {
 	cases := [][]byte{
@@ -46,7 +17,7 @@ func TestEcho(t *testing.T) {
 
 	for i, tc := range cases {
 		t.Run(fmt.Sprintf("%v", i), func(t *testing.T) {
-			client, server := testServer(t)
+			client, server := test.Conn(t)
 			go echo(server)
 
 			n, err := client.Write(tc)
