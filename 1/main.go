@@ -17,25 +17,17 @@ func main() {
 	server.TCP(handleConn)
 }
 
-type inputRequest struct {
+const onlyValidMethod = "isPrime"
+
+type request struct {
 	Method string      `json:"method"`
 	Number json.Number `json:"number"`
 }
 
-func (ir *inputRequest) IsValid() bool {
-	if ir.Method != onlyValidMethod {
-		return false
-	}
-
-	return true
-}
-
-type outputResponse struct {
+type response struct {
 	Method string `json:"method"`
 	Prime  bool   `json:"prime"`
 }
-
-const onlyValidMethod = "isPrime"
 
 func handleConn(conn net.Conn) {
 	defer func() {
@@ -43,50 +35,70 @@ func handleConn(conn net.Conn) {
 		log.Printf("closed %s", conn.RemoteAddr())
 	}()
 
-	var input inputRequest
+	var input request
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
 		dec := json.NewDecoder(bytes.NewReader(scanner.Bytes()))
 		if err := dec.Decode(&input); err != nil {
 			if err != io.EOF {
-				log.Printf("err decoding: %v", err)
+				// malformed
+				log.Printf("err decoding request: %v", err)
+				_ = sendMalformedResponse(conn)
+				break
 			}
 			continue
 		}
 		log.Printf("received: %+v", input)
-		if !input.IsValid() {
-			continue
+		if input.Method != onlyValidMethod {
+			// malformed
+			log.Printf("method is not %q", onlyValidMethod)
+			_ = sendMalformedResponse(conn)
+			break
 		}
-
-		// Note that non-integers can not be prime.
-		n, err := input.Number.Int64()
-		if err != nil {
-			log.Printf("err: %v", err)
-			continue
-		}
-
-		output := outputResponse{
-			Method: onlyValidMethod,
-			Prime:  isPrime(int(n)),
-		}
-		enc := json.NewEncoder(conn)
-		if err := enc.Encode(&output); err != nil {
-			log.Printf("encoding err: %v", err)
-		}
+		_ = sendResponse(conn, isPrime(input.Number))
 	}
 	if err := scanner.Err(); err != nil {
 		log.Printf("scanning input: %v", err)
 	}
 }
 
-func sendMalformedResponse(conn net.Conn) error {
-	_, err := conn.Write([]byte(`{}`))
-	return err
+func sendMalformedResponse(w io.Writer) error {
+	// return sendResponse(w, true)
+	log.Printf("sending malformed response")
+	art := struct {
+		Error string `json:"error"`
+	}{
+		Error: "malformed request",
+	}
+	return jsonResponse(w, art)
 }
 
-func isPrime(n int) bool {
+func jsonResponse(w io.Writer, i any) error {
+	enc := json.NewEncoder(w)
+	if err := enc.Encode(i); err != nil {
+		log.Printf("encoding err: %v", err)
+		return err
+	}
+	return nil
+}
+
+func sendResponse(w io.Writer, isPrime bool) error {
+	output := response{
+		Method: onlyValidMethod,
+		Prime:  isPrime,
+	}
+	return jsonResponse(w, output)
+}
+
+func isPrime(jn json.Number) bool {
+	n, err := jn.Int64()
+	if err != nil {
+		log.Println(err)
+		return false
+	}
+
 	for i := 2; i <= int(math.Floor(math.Sqrt(float64(n)))); i++ {
-		if n%i == 0 {
+		if int(n)%i == 0 {
 			return false
 		}
 	}
