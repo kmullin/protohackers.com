@@ -35,8 +35,11 @@ func (r *request) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	if m.Method == nil || m.Number == nil {
-		return errors.New("missing required fields")
+	if m.Method == nil || *m.Method != onlyValidMethod {
+		return errors.New("missing or invalid required field method")
+	}
+	if m.Number == nil {
+		return errors.New("missing required field number")
 	}
 	r.Method = *m.Method
 	r.Number = *m.Number
@@ -50,10 +53,6 @@ func isIntegral(f float64) bool {
 type response struct {
 	Method string `json:"method"`
 	Prime  bool   `json:"prime"`
-}
-
-func (r *response) IsValid() bool {
-	return true
 }
 
 func handleConn(conn net.Conn) {
@@ -73,12 +72,6 @@ func handleConn(conn net.Conn) {
 			}
 			// malformed
 			log.Printf("err decoding request: %v", err)
-			_ = sendMalformedResponse(conn)
-			break
-		}
-		if r.Method != onlyValidMethod {
-			// malformed
-			log.Printf("method is not %q", onlyValidMethod)
 			_ = sendMalformedResponse(conn)
 			break
 		}
