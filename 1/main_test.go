@@ -1,10 +1,19 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
 	"testing"
+
+	"git.kpmullin.com/kmullin/protocolhackers.com/test"
 )
+
+func init() {
+	log.SetFlags(log.Lshortfile | log.LstdFlags)
+}
 
 func TestMalformed(t *testing.T) {
 	// A response is malformed if it is not a well-formed JSON object,
@@ -35,24 +44,31 @@ func TestMalformed(t *testing.T) {
 	}
 }
 
-/*
 func TestHandler(t *testing.T) {
-	client, server := test.Conn(t)
-	go handleConn(server)
 
-	n, err := client.Write(p)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n != len(p) {
-		t.Fatalf("wrong num bytes written, got %v wanted %v", n, len(p))
-	}
-	t.Log("scanning...")
-	scanner := bufio.NewScanner(client)
-	for scanner.Scan() {
-
+	invalidCases := [][]byte{
+		[]byte(`{"method":"isPrime","number":"1043398"}`),
+		[]byte(`{"method":"isPrime"}`),
 	}
 
-	client.Close()
+	for i, b := range invalidCases {
+		t.Run(fmt.Sprintf("%v invalid json number", i), func(t *testing.T) {
+			client, server := test.Conn(t)
+			go handleConn(server)
+
+			client.Write(append(b, []byte("\n")...))
+			scanner := bufio.NewScanner(client)
+			for scanner.Scan() {
+				var r map[string]interface{}
+				dec := json.NewDecoder(bytes.NewReader(scanner.Bytes()))
+				err := dec.Decode(&r)
+				if err != nil {
+					t.Fatalf("err decoding response: %v", err)
+				}
+				// is valid response ?
+				break
+			}
+			client.Close()
+		})
+	}
 }
-*/

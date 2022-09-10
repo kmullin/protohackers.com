@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"math"
@@ -20,13 +21,39 @@ func main() {
 const onlyValidMethod = "isPrime"
 
 type request struct {
-	Method string      `json:"method"`
-	Number json.Number `json:"number"`
+	Method string  `json:"method"`
+	Number float64 `json:"number"`
+}
+
+// UnmarshalJSON implements a custom json.Unmarshaler that will detect missing fields
+func (r *request) UnmarshalJSON(b []byte) error {
+	m := struct {
+		Method *string  `json:"method"`
+		Number *float64 `json:"number"`
+	}{}
+	err := json.Unmarshal(b, &m)
+	if err != nil {
+		return err
+	}
+	if m.Method == nil || m.Number == nil {
+		return errors.New("missing required fields")
+	}
+	r.Method = *m.Method
+	r.Number = *m.Number
+	return nil
+}
+
+func isIntegral(f float64) bool {
+	return f == float64(int(f))
 }
 
 type response struct {
 	Method string `json:"method"`
 	Prime  bool   `json:"prime"`
+}
+
+func (r *response) IsValid() bool {
+	return true
 }
 
 func handleConn(conn net.Conn) {
@@ -35,27 +62,35 @@ func handleConn(conn net.Conn) {
 		log.Printf("closed %s", conn.RemoteAddr())
 	}()
 
-	var input request
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
+		var r request
+		log.Printf("received %v", scanner.Text())
 		dec := json.NewDecoder(bytes.NewReader(scanner.Bytes()))
-		if err := dec.Decode(&input); err != nil {
-			if err != io.EOF {
-				// malformed
-				log.Printf("err decoding request: %v", err)
-				_ = sendMalformedResponse(conn)
-				break
+		if err := dec.Decode(&r); err != nil {
+			if err == io.EOF {
+				continue
 			}
-			continue
+			// malformed
+			log.Printf("err decoding request: %v", err)
+			_ = sendMalformedResponse(conn)
+			break
 		}
-		log.Printf("received: %+v", input)
-		if input.Method != onlyValidMethod {
+		if r.Method != onlyValidMethod {
 			// malformed
 			log.Printf("method is not %q", onlyValidMethod)
 			_ = sendMalformedResponse(conn)
 			break
 		}
-		_ = sendResponse(conn, isPrime(input.Number))
+
+		var p bool
+		// should have a compliant request
+		if isIntegral(r.Number) {
+			p = isPrime(int(r.Number))
+		} else {
+			p = false
+		}
+		_ = sendResponse(conn, p)
 	}
 	if err := scanner.Err(); err != nil {
 		log.Printf("scanning input: %v", err)
@@ -63,7 +98,6 @@ func handleConn(conn net.Conn) {
 }
 
 func sendMalformedResponse(w io.Writer) error {
-	// return sendResponse(w, true)
 	log.Printf("sending malformed response")
 	art := struct {
 		Error string `json:"error"`
@@ -90,13 +124,8 @@ func sendResponse(w io.Writer, isPrime bool) error {
 	return jsonResponse(w, output)
 }
 
-func isPrime(jn json.Number) bool {
-	n, err := jn.Int64()
-	if err != nil {
-		log.Println(err)
-		return false
-	}
-
+// isPrime implements the Sieve of Eratosthenes
+func isPrime(n int) bool {
 	for i := 2; i <= int(math.Floor(math.Sqrt(float64(n)))); i++ {
 		if int(n)%i == 0 {
 			return false
