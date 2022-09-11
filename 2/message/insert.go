@@ -10,6 +10,6 @@ type Insert struct {
 	Price     int32
 }
 
-func (i *Insert) UnmarshalBinary(data []byte) error {
-	return errors.New("not implemented")
+func (i *Insert) MarshalBinary() ([]byte, error) {
+	return nil, errors.New("not implemented")
 }

@@ -1,14 +1,22 @@
 package main
 
 import (
+	"bufio"
 	"log"
+	"net"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/2/message"
+	"git.kpmullin.com/kmullin/protocolhackers.com/server"
 )
 
 func main() {
-	q := message.Query{}
-	log.Printf("%v", q)
-	i := message.Insert{}
-	log.Printf("%v", i)
+	server.TCP(handler)
+}
+
+func handler(conn net.Conn) {
+	defer conn.Close()
+	b, err := bufio.NewReader(conn).Peek(1)
+	if err != nil {
+		log.Printf("err peek: %v", err)
+	}
+	log.Printf("% x", b)
 }
