@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
-type Query struct {
+type query struct {
 	MinTime time.Time
 	MaxTime time.Time
 }
 
-func (q Query) Type() msgType {
+func (q query) Type() msgType {
 	return QueryType
 }
