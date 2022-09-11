@@ -1,7 +1,6 @@
 package message
 
 import (
-	"errors"
 	"time"
 )
 
@@ -10,6 +9,6 @@ type Query struct {
 	MaxTime time.Time
 }
 
-func (q *Query) UnmarshalBinary(data []byte) error {
-	return errors.New("not implemented")
+func (q Query) Type() Type {
+	return QueryType
 }

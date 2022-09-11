@@ -1,10 +1,11 @@
 package main
 
 import (
-	"bufio"
+	"io"
 	"log"
 	"net"
 
+	"git.kpmullin.com/kmullin/protocolhackers.com/2/message"
 	"git.kpmullin.com/kmullin/protocolhackers.com/server"
 )
 
@@ -13,10 +14,20 @@ func main() {
 }
 
 func handler(conn net.Conn) {
-	defer conn.Close()
-	b, err := bufio.NewReader(conn).Peek(1)
-	if err != nil {
-		log.Printf("err peek: %v", err)
+	defer func() {
+		conn.Close()
+		log.Printf("closed: %v", conn.RemoteAddr())
+	}()
+
+	for {
+		m, err := message.New(conn)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Printf("msg err: %v", err)
+			return
+		}
+		log.Printf("%+v", m)
 	}
-	log.Printf("% x", b)
 }
