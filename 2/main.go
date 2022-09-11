@@ -48,8 +48,6 @@ func handler(conn net.Conn) {
 			log.Printf("not implemented yet: %+v", m)
 		}
 	}
-
-	log.Printf("inserts (%d): %v", len(inserts), inserts)
 }
 
 func findMean(inserts []message.Insert, min, max time.Time) int32 {
