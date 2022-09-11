@@ -20,10 +20,10 @@ func TestMsgSize(t *testing.T) {
 }
 
 func TestMarshaling(t *testing.T) {
-	var cm clientMessage
 	assert := assert.New(t)
 
 	t.Run("unmarshal", func(t *testing.T) {
+		var cm clientMessage
 		data := []byte{0x49, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x65}
 		r := bytes.NewReader(data)
 		err := binary.Read(r, byteOrder, &cm)
