@@ -13,7 +13,7 @@ var byteOrder = binary.BigEndian
 
 // clientMessage represents requests from the client
 type clientMessage struct {
-	Type      byte
-	Timestamp int32
-	Price     int32
+	Type byte
+	N1   int32
+	N2   int32
 }

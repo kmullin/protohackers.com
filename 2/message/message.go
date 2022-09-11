@@ -21,13 +21,13 @@ func New(r io.Reader) (Message, error) {
 	switch m.Type {
 	case insertByte:
 		return Insert{
-			Timestamp: unixTime(m.Timestamp),
-			Price:     m.Price,
+			Timestamp: unixTime(m.N1),
+			Price:     m.N2,
 		}, nil
 	case queryByte:
 		return Query{
-			MinTime: unixTime(m.Timestamp),
-			MaxTime: unixTime(m.Price),
+			MinTime: unixTime(m.N1),
+			MaxTime: unixTime(m.N2),
 		}, nil
 	default:
 		return nil, Unknown
