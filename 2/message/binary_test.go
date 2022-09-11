@@ -28,7 +28,7 @@ func TestMarshaling(t *testing.T) {
 		var cm clientMessage
 		data := []byte{0x49, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x65}
 		r := bytes.NewReader(data)
-		err := binary.Read(r, byteOrder, &cm)
+		err := binary.Read(r, ByteOrder, &cm)
 
 		assert.Nil(err)
 		assert.Equal(insertByte, cm.Type)
@@ -45,7 +45,7 @@ func TestMarshaling(t *testing.T) {
 		}
 		expected := []byte{0x51, 0x05, 0xe2, 0x68, 0x90, 0x00, 0x13, 0xbb, 0x74}
 
-		err := binary.Write(&buf, byteOrder, cm)
+		err := binary.Write(&buf, ByteOrder, cm)
 		assert.Nil(err)
 		assert.Equal(len(buf.Bytes()), msgSize)
 		assert.Equal(expected, buf.Bytes())

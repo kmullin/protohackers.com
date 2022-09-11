@@ -23,7 +23,7 @@ type Message interface{}
 
 func New(r io.Reader) (Message, error) {
 	var m clientMessage
-	err := binary.Read(r, byteOrder, &m)
+	err := binary.Read(r, ByteOrder, &m)
 	if err != nil {
 		return nil, err
 	}

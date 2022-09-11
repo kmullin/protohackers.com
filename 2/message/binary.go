@@ -9,7 +9,7 @@ const (
 	queryByte  = byte('Q')
 )
 
-var byteOrder = binary.BigEndian
+var ByteOrder = binary.BigEndian
 
 // clientMessage represents requests from the client
 type clientMessage struct {

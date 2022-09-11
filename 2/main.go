@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"io"
 	"log"
 	"net"
@@ -36,6 +37,12 @@ func handler(conn net.Conn) {
 			inserts = append(inserts, m)
 		case message.Query:
 			log.Printf("query: %v", m)
+
+			mean := findMean(inserts, m.MinTime, m.MaxTime)
+			err := binary.Write(conn, message.ByteOrder, mean)
+			if err != nil {
+				log.Printf("err sending response: %v", err)
+			}
 		default:
 			log.Printf("not implemented yet: %+v", m)
 		}

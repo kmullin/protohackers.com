@@ -15,6 +15,7 @@ func TestMean(t *testing.T) {
 		{time.Now().Add(-(60 * time.Minute)), 12093123},
 		{time.Now().Add(-(30 * time.Minute)), 912378301},
 		{time.Now().Add(-(30 * time.Minute)), 1902},
+		{time.Now().Add(-(30 * time.Hour)), 99999999},
 	}
 
 	d := 2 * time.Hour
