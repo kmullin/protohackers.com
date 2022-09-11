@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	server.TCP(handleConn)
+	server.TCP(server.HandlerFunc(handleConn))
 }
 
 const onlyValidMethod = "isPrime"
