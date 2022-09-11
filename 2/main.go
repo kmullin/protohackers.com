@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	server.TCP(handler)
+	server.TCP(server.HandlerFunc(handler))
 }
 
 func handler(conn net.Conn) {
