@@ -9,15 +9,15 @@ import (
 
 var Unknown = errors.New("unknown message")
 
-type Type int
+type msgType int
 
 const (
-	QueryType = iota
+	QueryType msgType = iota
 	InsertType
 )
 
 type Message interface {
-	Type() Type
+	Type() msgType
 }
 
 func New(r io.Reader) (Message, error) {

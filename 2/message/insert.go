@@ -9,6 +9,6 @@ type Insert struct {
 	Price     int32
 }
 
-func (i Insert) Type() Type {
+func (i Insert) Type() msgType {
 	return InsertType
 }

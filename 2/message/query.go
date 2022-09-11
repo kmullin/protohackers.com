@@ -9,6 +9,6 @@ type Query struct {
 	MaxTime time.Time
 }
 
-func (q Query) Type() Type {
+func (q Query) Type() msgType {
 	return QueryType
 }
