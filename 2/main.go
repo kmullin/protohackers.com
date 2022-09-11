@@ -52,7 +52,7 @@ func handler(conn net.Conn) {
 
 func findMean(inserts []message.Insert, min, max time.Time) int32 {
 	var count, result int32
-	if min.Before(max) {
+	if !min.After(max) {
 		for _, i := range inserts {
 			if i.Timestamp.Before(min) || i.Timestamp.After(max) {
 				continue
