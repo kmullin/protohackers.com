@@ -62,3 +62,13 @@ func TestHandler(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal(expected, buf.Bytes())
 }
+
+func TestHandler2(t *testing.T) {
+	t.Skip()
+	// Q 420535569 420535569
+	unix := time.Unix(420535569, 0).UTC()
+	m := message.Query{unix, unix}
+
+	t.Logf("%v", unix)
+	t.Logf("%v", m)
+}

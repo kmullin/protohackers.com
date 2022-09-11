@@ -56,10 +56,12 @@ func findMean(inserts []message.Insert, min, max time.Time) int32 {
 	var count, result int32
 	if min.Before(max) {
 		for _, i := range inserts {
-			if i.Timestamp.After(min) && i.Timestamp.Before(max) {
-				result += i.Price
-				count++
+			if i.Timestamp.Before(min) || i.Timestamp.After(max) {
+				continue
 			}
+			// closed interval, we're equal or between
+			result += i.Price
+			count++
 		}
 	}
 	if count == 0 {
