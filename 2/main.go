@@ -20,7 +20,7 @@ func handler(conn net.Conn) {
 	}()
 
 	for {
-		m, err := message.New(conn)
+		i, err := message.New(conn)
 		if err != nil {
 			if err == io.EOF {
 				break
@@ -28,6 +28,13 @@ func handler(conn net.Conn) {
 			log.Printf("msg err: %v", err)
 			return
 		}
-		log.Printf("%+v", m)
+		switch m := i.(type) {
+		case message.Insert:
+			log.Printf("insert: %v", m)
+		case message.Query:
+			log.Printf("query: %v", m)
+		default:
+			log.Printf("not implemented yet: %+v", m)
+		}
 	}
 }
