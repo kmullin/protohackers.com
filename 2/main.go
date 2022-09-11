@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"log"
+	"math"
 	"net"
 	"time"
 
@@ -51,13 +52,13 @@ func handler(conn net.Conn) {
 	log.Printf("inserts: %v", inserts)
 }
 
-func findMean(inserts []message.Insert, min, max time.Time) (result int32) {
-	var count int32
+func findMean(inserts []message.Insert, min, max time.Time) int32 {
+	var count, result int32
 	for _, i := range inserts {
 		if i.Timestamp.After(min) && i.Timestamp.Before(max) {
 			result += i.Price
 			count++
 		}
 	}
-	return result / count
+	return int32(math.Round(float64(result) / float64(count)))
 }
