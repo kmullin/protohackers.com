@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"io"
 	"testing"
 	"time"
@@ -38,37 +39,57 @@ func TestHandler(t *testing.T) {
 		--> 00 00 00 65                  101
 	*/
 	assert := assert.New(t)
-	client, server := test.Conn(t)
-	defer client.Close()
-	go handler(server)
 
-	requests := [][]byte{
-		{0x49, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x65},
-		{0x49, 0x00, 0x00, 0x30, 0x3a, 0x00, 0x00, 0x00, 0x66},
-		{0x49, 0x00, 0x00, 0x30, 0x3b, 0x00, 0x00, 0x00, 0x64},
-		{0x49, 0x00, 0x00, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x05},
-		{0x51, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x40, 0x00},
-	}
-	expected := []byte{0x00, 0x00, 0x00, 0x65}
+	t.Run("example request", func(t *testing.T) {
+		client, server := test.Conn(t)
+		defer client.Close()
+		go handler(server)
 
-	for _, r := range requests {
-		n, err := client.Write(r)
+		requests := [][]byte{
+			{0x49, 0x00, 0x00, 0x30, 0x39, 0x00, 0x00, 0x00, 0x65},
+			{0x49, 0x00, 0x00, 0x30, 0x3a, 0x00, 0x00, 0x00, 0x66},
+			{0x49, 0x00, 0x00, 0x30, 0x3b, 0x00, 0x00, 0x00, 0x64},
+			{0x49, 0x00, 0x00, 0xa0, 0x00, 0x00, 0x00, 0x00, 0x05},
+			{0x51, 0x00, 0x00, 0x30, 0x00, 0x00, 0x00, 0x40, 0x00},
+		}
+		expected := []byte{0x00, 0x00, 0x00, 0x65}
+
+		for _, r := range requests {
+			n, err := client.Write(r)
+			assert.Nil(err)
+			assert.Equal(len(r), n)
+		}
+
+		var buf bytes.Buffer
+		_, err := io.CopyN(&buf, client, int64(len(expected)))
 		assert.Nil(err)
-		assert.Equal(len(r), n)
-	}
+		assert.Equal(expected, buf.Bytes())
+	})
 
-	var buf bytes.Buffer
-	_, err := io.CopyN(&buf, client, int64(len(expected)))
-	assert.Nil(err)
-	assert.Equal(expected, buf.Bytes())
-}
+	t.Run("negative", func(t *testing.T) {
+		client, server := test.Conn(t)
+		defer client.Close()
+		go handler(server)
 
-func TestHandler2(t *testing.T) {
-	t.Skip()
-	// Q 420535569 420535569
-	unix := time.Unix(420535569, 0).UTC()
-	m := message.Query{unix, unix}
+		now := time.Now()
 
-	t.Logf("%v", unix)
-	t.Logf("%v", m)
+		requests := []message.Message{
+			message.Insert{now, -1827312},
+			message.Query{now, now},
+		}
+		for _, r := range requests {
+			b, err := r.MarshalBinary()
+			assert.Nil(err)
+			n, err := client.Write(b)
+			assert.Nil(err)
+			assert.Equal(n, 9)
+			t.Logf("% x", b)
+		}
+		expected := int32(-1827312)
+
+		var i int32
+		err := binary.Read(client, message.ByteOrder, &i)
+		assert.Nil(err)
+		assert.Equal(expected, i)
+	})
 }
