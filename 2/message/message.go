@@ -9,16 +9,7 @@ import (
 
 var Unknown = errors.New("unknown message")
 
-type msgType int
-
-const (
-	QueryType msgType = iota
-	InsertType
-)
-
-type Message interface {
-	Type() msgType
-}
+type Message interface{}
 
 func New(r io.Reader) (Message, error) {
 	var m clientMessage
@@ -29,12 +20,12 @@ func New(r io.Reader) (Message, error) {
 
 	switch m.Type {
 	case insertByte:
-		return insert{
+		return Insert{
 			Timestamp: unixTime(m.Timestamp),
 			Price:     m.Price,
 		}, nil
 	case queryByte:
-		return query{
+		return Query{
 			MinTime: unixTime(m.Timestamp),
 			MaxTime: unixTime(m.Price),
 		}, nil

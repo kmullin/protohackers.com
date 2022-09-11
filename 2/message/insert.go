@@ -4,11 +4,7 @@ import (
 	"time"
 )
 
-type insert struct {
+type Insert struct {
 	Timestamp time.Time
 	Price     int32
-}
-
-func (i insert) Type() msgType {
-	return InsertType
 }

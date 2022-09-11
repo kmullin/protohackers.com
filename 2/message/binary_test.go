@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const msgSize = 9
+
 func TestMsgSize(t *testing.T) {
 	msg := clientMessage{
 		Timestamp: 4,

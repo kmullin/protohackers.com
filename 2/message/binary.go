@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 )
 
-const msgSize = 9
-
 const (
 	insertByte = byte('I')
 	queryByte  = byte('Q')
