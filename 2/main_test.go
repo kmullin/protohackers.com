@@ -54,11 +54,11 @@ func TestHandler(t *testing.T) {
 	for _, r := range requests {
 		n, err := client.Write(r)
 		assert.Nil(err)
-		assert.Equal(9, n)
+		assert.Equal(len(r), n)
 	}
 
 	var buf bytes.Buffer
-	_, err := io.CopyN(&buf, client, 4)
+	_, err := io.CopyN(&buf, client, int64(len(expected)))
 	assert.Nil(err)
 	assert.Equal(expected, buf.Bytes())
 }

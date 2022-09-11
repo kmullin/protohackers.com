@@ -49,16 +49,21 @@ func handler(conn net.Conn) {
 		}
 	}
 
-	log.Printf("inserts: %v", inserts)
+	log.Printf("inserts (%d): %v", len(inserts), inserts)
 }
 
 func findMean(inserts []message.Insert, min, max time.Time) int32 {
 	var count, result int32
-	for _, i := range inserts {
-		if i.Timestamp.After(min) && i.Timestamp.Before(max) {
-			result += i.Price
-			count++
+	if min.Before(max) {
+		for _, i := range inserts {
+			if i.Timestamp.After(min) && i.Timestamp.Before(max) {
+				result += i.Price
+				count++
+			}
 		}
+	}
+	if count == 0 {
+		return 0
 	}
 	return int32(math.Round(float64(result) / float64(count)))
 }
