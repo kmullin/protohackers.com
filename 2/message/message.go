@@ -9,6 +9,16 @@ import (
 
 var Unknown = errors.New("unknown message")
 
+type Query struct {
+	MinTime time.Time
+	MaxTime time.Time
+}
+
+type Insert struct {
+	Timestamp time.Time
+	Price     int32
+}
+
 type Message interface{}
 
 func New(r io.Reader) (Message, error) {
