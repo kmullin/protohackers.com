@@ -127,3 +127,29 @@ func TestHandler(t *testing.T) {
 		assert.Equal(expected, i)
 	})
 }
+
+func TestCalculateMean(t *testing.T) {
+	assert := assert.New(t)
+	now := time.Now()
+	m := insertCache{
+		now.Add(-1): 100,
+		now.Add(-2): 101,
+		now.Add(-3): 102,
+	}
+
+	cases := []struct {
+		Name     string
+		Expected int32
+		Min, Max time.Time
+	}{
+		{"min after max", 0, now.Add(1), now},
+		{"no samples", 0, now, now},
+		{"real mean", 101, time.Unix(0, 0), now},
+	}
+
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			assert.Equal(c.Expected, m.Mean(c.Min, c.Max))
+		})
+	}
+}
