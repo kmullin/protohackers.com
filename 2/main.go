@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"log"
 	"math"
 	"net"
@@ -46,9 +45,6 @@ func handler(conn net.Conn) {
 	for {
 		i, err := message.New(conn)
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
 			log.Printf("msg err: %v", err)
 			return
 		}

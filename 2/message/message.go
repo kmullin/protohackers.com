@@ -51,6 +51,9 @@ func New(r io.Reader) (Message, error) {
 	var m clientMessage
 	err := binary.Read(r, ByteOrder, &m)
 	if err != nil {
+		if err == io.EOF {
+			return nil, errors.New("unexpected EOF")
+		}
 		return nil, err
 	}
 
