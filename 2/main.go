@@ -53,9 +53,7 @@ func handler(conn net.Conn) {
 			inserts[m.Timestamp] = m.Price
 		case message.Query:
 			log.Printf("query: %v", m)
-
-			mean := inserts.Mean(m.MinTime, m.MaxTime)
-			err := message.Write(conn, mean)
+			err := message.Write(conn, inserts.Mean(m.MinTime, m.MaxTime))
 			if err != nil {
 				log.Printf("err sending response: %v", err)
 			}

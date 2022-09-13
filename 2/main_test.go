@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
+	"math"
 	"testing"
 	"time"
 
@@ -43,6 +44,7 @@ func TestHandler(t *testing.T) {
 	assert := assert.New(t)
 
 	t.Run("example request", func(t *testing.T) {
+		t.Parallel()
 		client, server := test.Conn(t)
 		defer client.Close()
 		go handler(server)
@@ -69,6 +71,7 @@ func TestHandler(t *testing.T) {
 	})
 
 	t.Run("negative", func(t *testing.T) {
+		t.Parallel()
 		client, server := test.Conn(t)
 		defer client.Close()
 		go handler(server)
@@ -88,6 +91,35 @@ func TestHandler(t *testing.T) {
 			t.Logf("% x", b)
 		}
 		expected := int32(-1827312)
+
+		var i int32
+		err := binary.Read(client, message.ByteOrder, &i)
+		assert.Nil(err)
+		assert.Equal(expected, i)
+	})
+
+	t.Run("max int32", func(t *testing.T) {
+		t.Parallel()
+		client, server := test.Conn(t)
+		defer client.Close()
+		go handler(server)
+
+		now := time.Now()
+		var requests []message.Message
+		for i := 0; i < 100; i++ {
+			requests = append(requests, message.Insert{now, math.MaxInt32})
+		}
+		requests = append(requests, message.Query{now, now})
+
+		for _, r := range requests {
+			b, err := r.MarshalBinary()
+			assert.Nil(err)
+			n, err := client.Write(b)
+			assert.Nil(err)
+			assert.Equal(n, 9)
+			t.Logf("% x", b)
+		}
+		expected := int32(math.MaxInt32)
 
 		var i int32
 		err := binary.Read(client, message.ByteOrder, &i)
