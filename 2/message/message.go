@@ -70,6 +70,10 @@ func New(r io.Reader) (Message, error) {
 	}
 }
 
+func Write(w io.Writer, a any) error {
+	return binary.Write(w, ByteOrder, a)
+}
+
 func unixTime(i int32) time.Time {
 	return time.Unix(int64(i), 0).UTC()
 }
