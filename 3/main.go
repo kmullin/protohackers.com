@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -11,7 +12,13 @@ import (
 )
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	var jsonLogging bool
+	flag.BoolVar(&jsonLogging, "json", false, "turn on json logging")
+	flag.Parse()
+
+	if !jsonLogging {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 
 	s := chat.NewServer(log.Logger)
 	server.TCP(s)
