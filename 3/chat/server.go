@@ -2,19 +2,36 @@ package chat
 
 import (
 	"net"
+	"sync"
+	"time"
 
 	"github.com/rs/zerolog"
 )
 
 type Server struct {
-	channels []string // placeholder
-	users    []User
+	users []User
+	mu    *sync.RWMutex
 
 	logger zerolog.Logger // TODO: interface
 }
 
 func NewServer(logger zerolog.Logger) *Server {
-	return &Server{logger: logger}
+	s := &Server{logger: logger, users: make([]User, 0), mu: new(sync.RWMutex)}
+	s.startStateLog()
+	return s
+}
+
+func (s *Server) startStateLog() {
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			<-ticker.C
+			s.mu.RLock()
+			s.logger.Info().Interface("users", s.users).Msg("currently connected users")
+			s.mu.RUnlock()
+		}
+	}()
 }
 
 func (s *Server) HandleTCP(conn net.Conn) {
@@ -28,6 +45,9 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		s.logger.Err(err).Msg("establishing session")
 		return
 	}
+
+	s.addUser(session.User)
+	defer s.removeUser(session.User)
 	s.logger.Info().Interface("session", session).Msg("user joined")
 
 	err = session.ReadAll()
@@ -35,4 +55,30 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		s.logger.Err(err).Msg("")
 		return
 	}
+}
+
+func (s *Server) addUser(user User) {
+	s.mu.Lock()
+	s.users = append(s.users, user)
+	s.mu.Unlock()
+}
+
+func (s *Server) removeUser(user User) {
+	var i int
+	var u User
+	s.mu.RLock()
+	for i, u = range s.users {
+		if u == user {
+			break
+		}
+	}
+
+	users := make([]User, 0)
+	users = append(users, s.users[:i]...)
+	users = append(users, s.users[i+1:]...)
+	s.mu.RUnlock()
+
+	s.mu.Lock()
+	s.users = users
+	s.mu.Unlock()
 }

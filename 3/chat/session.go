@@ -8,7 +8,6 @@ import (
 )
 
 type Session struct {
-	id         uint // ?
 	User       User
 	TimeJoined time.Time
 	scanner    *bufio.Scanner
@@ -28,6 +27,8 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.scanner = bufio.NewScanner(conn)
 	s.User, err = s.readUserName()
 	if err != nil {
+		// inform client of bad username
+		_, _ = fmt.Fprintln(conn, "Invalid username (must be alphanumeric)")
 		return nil, fmt.Errorf("reading username: %w", err)
 	}
 	return &s, nil
@@ -44,7 +45,6 @@ func (s *Session) readUserName() (User, error) {
 
 func (s *Session) ReadAll() error {
 	for s.scanner.Scan() {
-
 	}
 	if err := s.scanner.Err(); err != nil {
 		return fmt.Errorf("reading client: %w", err)
