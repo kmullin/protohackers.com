@@ -8,16 +8,16 @@ import (
 )
 
 type Session struct {
-	id      uint // ?
-	User    User
-	t       time.Time
-	scanner *bufio.Scanner
+	id         uint // ?
+	User       User
+	TimeJoined time.Time
+	scanner    *bufio.Scanner
 }
 
 func NewSession(conn net.Conn) (*Session, error) {
 	var err error
 	var s Session
-	s.t = time.Now()
+	s.TimeJoined = time.Now()
 
 	_, err = fmt.Fprintln(conn, "Welcome to budgetchat! What shall I call you?")
 	if err != nil {
@@ -40,4 +40,14 @@ func (s *Session) readUserName() (User, error) {
 		return User{}, fmt.Errorf("invalid username: %q", user.Name)
 	}
 	return user, nil
+}
+
+func (s *Session) ReadAll() error {
+	for s.scanner.Scan() {
+
+	}
+	if err := s.scanner.Err(); err != nil {
+		return fmt.Errorf("reading client: %w", err)
+	}
+	return nil
 }

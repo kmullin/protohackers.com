@@ -2,7 +2,6 @@ package chat
 
 import (
 	"net"
-	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -30,5 +29,10 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		return
 	}
 	s.logger.Info().Interface("session", session).Msg("user joined")
-	time.Sleep(5 * time.Second)
+
+	err = session.ReadAll()
+	if err != nil {
+		s.logger.Err(err).Msg("")
+		return
+	}
 }
