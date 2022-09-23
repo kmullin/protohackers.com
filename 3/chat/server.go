@@ -8,7 +8,6 @@ import (
 	"unicode"
 
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
@@ -18,17 +17,21 @@ type Server struct {
 	logger zerolog.Logger // TODO: interface
 }
 
+func NewServer(logger zerolog.Logger) *Server {
+	return &Server{logger: logger}
+}
+
 func (s *Server) HandleTCP(conn net.Conn) {
 	defer func() {
 		conn.Close()
-		log.Printf("closed %s", conn.RemoteAddr())
+		s.logger.Printf("closed %s", conn.RemoteAddr())
 	}()
 
 	fmt.Fprintf(conn, "Welcome to budgetchat! What shall I call you?\n")
 
 	scanner := bufio.NewScanner(conn)
 	user := s.readUserName(scanner)
-	log.Info().Interface("username", user).Msg("user joined")
+	s.logger.Info().Interface("username", user).Msg("user joined")
 }
 
 // readUserName reads from the connection and returns the validated User
@@ -37,7 +40,7 @@ func (s *Server) readUserName(scanner *bufio.Scanner) User {
 	username := scanner.Text()
 
 	if len(username) == 0 || !isAlphaNumeric(username) {
-		log.Debug().Str("username", username).Msg("invalid username")
+		s.logger.Debug().Str("username", username).Msg("invalid username")
 	}
 	return User{username, time.Now()}
 }

@@ -13,6 +13,6 @@ import (
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	handler := &chat.Server{}
-	server.TCP(handler)
+	s := chat.NewServer(log.Logger)
+	server.TCP(s)
 }
