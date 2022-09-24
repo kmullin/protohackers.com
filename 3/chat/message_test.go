@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -56,6 +57,18 @@ func TestScanMessage(t *testing.T) {
 				t.Fatalf("expected err, got nil")
 			}
 		})
+	}
+}
+
+func TestWriteMessage(t *testing.T) {
+	var b bytes.Buffer
+	orig := "this is a response message"
+	m := Message(orig)
+	m.Write(&b)
+
+	// written string should always have a single trailing newline
+	if b.String() != fmt.Sprintf("%s\n", orig) {
+		t.Fatalf("expected %q, got %q", orig, b.String())
 	}
 }
 
