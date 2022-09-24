@@ -12,6 +12,8 @@ import (
 type Session struct {
 	User       User
 	TimeJoined time.Time
+	recvC      chan Message
+	sendC      chan Message
 
 	scanner *bufio.Scanner
 	conn    net.Conn
@@ -21,6 +23,7 @@ func NewSession(conn net.Conn) (*Session, error) {
 	var err error
 	var s Session
 	s.TimeJoined = time.Now()
+	s.recvC, s.sendC = make(chan Message), make(chan Message)
 	s.scanner = bufio.NewScanner(conn)
 	s.scanner.Split(splitFunc)
 	s.conn = conn
