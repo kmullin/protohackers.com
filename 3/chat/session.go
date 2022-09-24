@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 const lineBreak = '\n'
@@ -53,7 +55,10 @@ func (s *Session) readUserName() (User, error) {
 
 func (s *Session) ReadAll() error {
 	for s.scanner.Scan() {
-		fmt.Println(s.scanner.Text())
+		log.Info().Str("msg", s.scanner.Text()).Msg("")
+	}
+	if err := s.scanner.Err(); err != nil {
+		log.Err(err).Msg("")
 	}
 	return nil
 }
