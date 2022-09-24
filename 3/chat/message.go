@@ -5,14 +5,14 @@ import (
 	"unicode"
 )
 
-// Message is a single line of ASCII text
-type Message string
+// message is a single line of ASCII text
+type message string
 
-func (m Message) String() string {
+func (m message) String() string {
 	return string(m)
 }
 
-func (m Message) isValid() bool {
+func (m message) IsValid() bool {
 	if len(m) == 0 {
 		return false
 	}
@@ -24,7 +24,7 @@ func (m Message) isValid() bool {
 	return true
 }
 
-func splitFunc(data []byte, atEOF bool) (int, []byte, error) {
+func msgSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
 	if atEOF {
 		// if we're already at EOF, we dont want any remaining data
 		return 0, nil, nil
