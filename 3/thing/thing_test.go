@@ -4,14 +4,10 @@ import (
 	"testing"
 )
 
-func TestThing(t *testing.T) {
-	chanReader := make(ChanReader, 0)
+func TestMerge(t *testing.T) {
 	c1 := make(chan int)
 	c2 := make(chan int)
-
-	chanReader = append(chanReader, c1, c2)
-
-	out := chanReader.Something()
+	out := Merge(c1, c2)
 
 	c1 <- 10
 	c2 <- 20

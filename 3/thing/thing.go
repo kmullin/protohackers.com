@@ -5,22 +5,24 @@ import (
 	"sync"
 )
 
-type ChanReader []<-chan int
-
-func (c ChanReader) Something() <-chan int {
-	out := make(chan int)
+func Merge(cs ...<-chan int) <-chan int {
 	var wg sync.WaitGroup
+	out := make(chan int)
 
-	wg.Add(len(c))
-	for _, cr := range c {
-		go func(c <-chan int) {
-			defer wg.Done()
-			for v := range c {
-				out <- v
-			}
-			fmt.Println("stopping")
-		}(cr)
+	output := func(c <-chan int) {
+		defer wg.Done()
+		for v := range c {
+			out <- v
+		}
+		fmt.Println("stopping")
 	}
+
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go output(c)
+	}
+
+	// close output channel once all producers are done
 	go func() {
 		wg.Wait()
 		fmt.Println("closing output chan")
