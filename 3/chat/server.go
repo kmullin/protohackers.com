@@ -9,14 +9,14 @@ import (
 )
 
 type Server struct {
-	users []User
-	mu    *sync.RWMutex
+	sessions []*Session
+	mu       *sync.RWMutex
 
 	logger zerolog.Logger // TODO: interface
 }
 
 func NewServer(logger zerolog.Logger) *Server {
-	s := &Server{logger: logger, users: make([]User, 0), mu: new(sync.RWMutex)}
+	s := &Server{logger: logger, mu: new(sync.RWMutex)}
 	s.startStateLog()
 	return s
 }
@@ -28,7 +28,7 @@ func (s *Server) startStateLog() {
 		for {
 			<-ticker.C
 			s.mu.RLock()
-			s.logger.Info().Interface("users", s.users).Msg("currently connected")
+			s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
 			s.mu.RUnlock()
 		}
 	}()
@@ -46,8 +46,8 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		return
 	}
 
-	s.addUser(session.User)
-	defer s.removeUser(session.User)
+	s.addSession(session)
+	defer s.removeSession(session)
 	s.logger.Info().Interface("session", session).Msg("user joined")
 
 	err = session.ReadAll()
@@ -57,26 +57,26 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	}
 }
 
-func (s *Server) addUser(user User) {
+func (s *Server) addSession(session *Session) {
 	s.mu.Lock()
-	s.users = append(s.users, user)
+	s.sessions = append(s.sessions, session)
 	s.mu.Unlock()
 }
 
-func (s *Server) removeUser(user User) {
+func (s *Server) removeSession(session *Session) {
 	var i int
-	var u User
+	var sesh *Session
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	for i, u = range s.users {
-		if u == user {
+	for i, sesh = range s.sessions {
+		if sesh == session {
 			break
 		}
 	}
 
-	users := make([]User, 0)
-	users = append(users, s.users[:i]...)
-	users = append(users, s.users[i+1:]...)
-	s.users = users
+	sessions := make([]*Session, 0)
+	sessions = append(sessions, s.sessions[:i]...)
+	sessions = append(sessions, s.sessions[i+1:]...)
+	s.sessions = sessions
 }
