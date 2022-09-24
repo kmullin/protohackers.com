@@ -23,12 +23,12 @@ func NewServer(logger zerolog.Logger) *Server {
 
 func (s *Server) startStateLog() {
 	go func() {
-		ticker := time.NewTicker(5 * time.Second)
+		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
 		for {
 			<-ticker.C
 			s.mu.RLock()
-			s.logger.Info().Interface("users", s.users).Msg("currently connected users")
+			s.logger.Info().Interface("users", s.users).Msg("currently connected")
 			s.mu.RUnlock()
 		}
 	}()
@@ -66,7 +66,9 @@ func (s *Server) addUser(user User) {
 func (s *Server) removeUser(user User) {
 	var i int
 	var u User
-	s.mu.RLock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i, u = range s.users {
 		if u == user {
 			break
@@ -76,9 +78,5 @@ func (s *Server) removeUser(user User) {
 	users := make([]User, 0)
 	users = append(users, s.users[:i]...)
 	users = append(users, s.users[i+1:]...)
-	s.mu.RUnlock()
-
-	s.mu.Lock()
 	s.users = users
-	s.mu.Unlock()
 }
