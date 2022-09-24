@@ -9,8 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const lineBreak = '\n'
-
 type Session struct {
 	User       User
 	TimeJoined time.Time
