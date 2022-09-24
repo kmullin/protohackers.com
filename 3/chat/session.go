@@ -25,7 +25,7 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.scanner.Split(splitFunc)
 	s.conn = conn
 
-	_, err = fmt.Fprintln(conn, "Welcome to budgetchat! What shall I call you?")
+	err = s.writeMsg("Welcome to budgetchat! What shall I call you?")
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.User, err = s.readUserName()
 	if err != nil {
 		// inform client of bad username
-		_, _ = fmt.Fprintln(conn, "Invalid username (must be alphanumeric)")
+		_ = s.writeMsg("Invalid username (must be alphanumeric)")
 		return nil, fmt.Errorf("reading username: %w", err)
 	}
 	return &s, nil
@@ -53,12 +53,17 @@ func (s *Session) readUserName() (User, error) {
 
 func (s *Session) ReadAll() error {
 	for s.scanner.Scan() {
-		log.Info().Str("msg", s.scanner.Text()).Msg("")
+		log.Info().Str("user", s.User.Name).Str("msg", s.scanner.Text()).Msg("")
 	}
 	if err := s.scanner.Err(); err != nil {
 		log.Err(err).Msg("")
 	}
 	return nil
+}
+
+func (s *Session) writeMsg(msg string) error {
+	_, err := fmt.Fprintln(s.conn, msg)
+	return err
 }
 
 func splitFunc(data []byte, atEOF bool) (int, []byte, error) {
