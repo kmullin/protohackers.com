@@ -24,6 +24,20 @@ func ReadMessage(r io.Reader) (Message, error) {
 	return m, nil
 }
 
+func ScanMessage(r io.Reader) (Message, error) {
+	scanner := bufio.NewScanner(r)
+	scanner.Split(splitFunc)
+	if !scanner.Scan() {
+		return Message(""), fmt.Errorf("err scanning")
+	}
+
+	m := Message(scanner.Text())
+	if !m.isValid() {
+		return Message(""), fmt.Errorf("invalid msg")
+	}
+	return m, nil
+}
+
 func (m Message) Write(w io.Writer) error {
 	_, err := fmt.Fprintln(w, m)
 	return err
@@ -36,4 +50,12 @@ func (m Message) isValid() bool {
 		}
 	}
 	return true
+}
+
+func splitFunc(data []byte, atEOF bool) (int, []byte, error) {
+	if atEOF {
+		// if we're already at EOF, we dont want any remaining data
+		return 0, nil, nil
+	}
+	return bufio.ScanLines(data, atEOF)
 }
