@@ -24,12 +24,14 @@ func ReadMessage(r io.Reader) (Message, error) {
 	return m, nil
 }
 
-func (m Message) Write(w io.Writer) error {
-	_, err := fmt.Fprintln(w, m)
-	return err
+func (m Message) String() string {
+	return string(m)
 }
 
 func (m Message) isValid() bool {
+	if len(m) == 0 {
+		return false
+	}
 	for i := 0; i < len(m); i++ {
 		if m[i] > unicode.MaxASCII {
 			return false

@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"bufio"
 	"fmt"
 	"net"
 	"time"
@@ -15,8 +14,7 @@ type Session struct {
 	recvC      chan Message
 	sendC      chan Message
 
-	scanner *bufio.Scanner
-	conn    net.Conn
+	conn net.Conn
 }
 
 func NewSession(conn net.Conn) (*Session, error) {
@@ -24,11 +22,10 @@ func NewSession(conn net.Conn) (*Session, error) {
 	var s Session
 	s.TimeJoined = time.Now()
 	s.recvC, s.sendC = make(chan Message), make(chan Message)
-	s.scanner = bufio.NewScanner(conn)
-	s.scanner.Split(splitFunc)
 	s.conn = conn
 
-	err = s.writeMsg("Welcome to budgetchat! What shall I call you?")
+	// start session with a welcome message
+	_, err = s.WriteString("Welcome to budgetchat! What shall I call you?")
 	if err != nil {
 		return nil, err
 	}
@@ -36,18 +33,19 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.User, err = s.readUserName()
 	if err != nil {
 		// inform client of bad username
-		_ = s.writeMsg("Invalid username (must be alphanumeric)")
+		_, _ = s.WriteString("Invalid username (must be alphanumeric)")
 		return nil, fmt.Errorf("reading username: %w", err)
 	}
 	return &s, nil
 }
 
 func (s *Session) readUserName() (User, error) {
-	if !s.scanner.Scan() {
-		return User{}, fmt.Errorf("couldnt scan for username")
+	msg, err := ReadMessage(s.conn)
+	if err != nil {
+		return User{}, err
 	}
 
-	user := User{s.scanner.Text()}
+	user := User{msg.String()}
 	if !user.IsValid() {
 		return User{}, fmt.Errorf("invalid username: %q", user.Name)
 	}
@@ -55,16 +53,18 @@ func (s *Session) readUserName() (User, error) {
 }
 
 func (s *Session) ReadAll() error {
-	for s.scanner.Scan() {
-		log.Info().Str("user", s.User.Name).Str("msg", s.scanner.Text()).Msg("")
-	}
-	if err := s.scanner.Err(); err != nil {
-		log.Err(err).Msg("")
+	for {
+		msg, err := ReadMessage(s.conn)
+		if err != nil {
+			log.Err(err).Msg("")
+
+		}
+		log.Info().Str("user", s.User.Name).Str("msg", msg.String()).Msg("")
 	}
 	return nil
 }
 
-func (s *Session) writeMsg(msg string) error {
-	_, err := fmt.Fprintln(s.conn, msg)
-	return err
+// WriteString implements the io.StringWriter interface
+func (s *Session) WriteString(msg string) (int, error) {
+	return fmt.Fprintln(s.conn, msg)
 }
