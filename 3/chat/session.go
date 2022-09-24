@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"time"
@@ -14,7 +15,8 @@ type Session struct {
 	recvC      chan Message
 	sendC      chan Message
 
-	conn net.Conn
+	conn    net.Conn
+	scanner *bufio.Scanner
 }
 
 func NewSession(conn net.Conn) (*Session, error) {
@@ -23,12 +25,8 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.TimeJoined = time.Now()
 	s.recvC, s.sendC = make(chan Message), make(chan Message)
 	s.conn = conn
-
-	// start session with a welcome message
-	_, err = s.WriteString("Welcome to budgetchat! What shall I call you?")
-	if err != nil {
-		return nil, err
-	}
+	s.scanner = bufio.NewScanner(conn)
+	s.scanner.Split(splitFunc)
 
 	s.User, err = s.readUserName()
 	if err != nil {
@@ -40,7 +38,12 @@ func NewSession(conn net.Conn) (*Session, error) {
 }
 
 func (s *Session) readUserName() (User, error) {
-	msg, err := ReadMessage(s.conn)
+	// start session with a welcome message
+	_, err := s.WriteString("Welcome to budgetchat! What shall I call you?")
+	if err != nil {
+		return User{}, err
+	}
+	msg, err := s.readMessage()
 	if err != nil {
 		return User{}, err
 	}
@@ -52,9 +55,22 @@ func (s *Session) readUserName() (User, error) {
 	return user, nil
 }
 
+// readMessage reads a single message from the connection
+func (s *Session) readMessage() (Message, error) {
+	if !s.scanner.Scan() {
+		return Message(""), fmt.Errorf("err scanning")
+	}
+
+	m := Message(s.scanner.Text())
+	if !m.isValid() {
+		return Message(""), fmt.Errorf("invalid msg")
+	}
+	return m, nil
+}
+
 func (s *Session) ReadAll() error {
 	for {
-		msg, err := ReadMessage(s.conn)
+		msg, err := s.readMessage()
 		if err != nil {
 			log.Err(err).Msg("")
 
@@ -64,7 +80,7 @@ func (s *Session) ReadAll() error {
 	return nil
 }
 
-// WriteString implements the io.StringWriter interface
+// WriteString implements the io.StringWriter interface, and sends a newline terminated string to the active session
 func (s *Session) WriteString(msg string) (int, error) {
 	return fmt.Fprintln(s.conn, msg)
 }

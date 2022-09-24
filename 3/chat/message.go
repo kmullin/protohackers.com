@@ -2,27 +2,11 @@ package chat
 
 import (
 	"bufio"
-	"fmt"
-	"io"
 	"unicode"
 )
 
 // Message is a single line of ASCII text
 type Message string
-
-func ReadMessage(r io.Reader) (Message, error) {
-	scanner := bufio.NewScanner(r)
-	scanner.Split(splitFunc)
-	if !scanner.Scan() {
-		return Message(""), fmt.Errorf("err scanning")
-	}
-
-	m := Message(scanner.Text())
-	if !m.isValid() {
-		return Message(""), fmt.Errorf("invalid msg")
-	}
-	return m, nil
-}
 
 func (m Message) String() string {
 	return string(m)
