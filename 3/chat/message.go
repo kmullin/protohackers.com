@@ -11,20 +11,6 @@ import (
 type Message string
 
 func ReadMessage(r io.Reader) (Message, error) {
-	bufReader := bufio.NewReader(r)
-	s, err := bufReader.ReadString('\n')
-	if err != nil {
-		return Message(""), err
-	}
-
-	m := Message(s)
-	if !m.isValid() {
-		return Message(""), fmt.Errorf("invalid msg")
-	}
-	return m, nil
-}
-
-func ScanMessage(r io.Reader) (Message, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(splitFunc)
 	if !scanner.Scan() {
