@@ -50,7 +50,6 @@ func (s *Server) HandleTCP(conn net.Conn) {
 func (s *Server) announceSession(session *Session) error {
 	var users []string
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for _, as := range s.sessions {
 		_, err := as.WriteString(fmt.Sprintf("* %v has entered the room", session.User))
 		if err != nil {
@@ -58,6 +57,8 @@ func (s *Server) announceSession(session *Session) error {
 		}
 		users = append(users, as.User.Name)
 	}
+	s.mu.RUnlock()
+
 	if len(users) > 0 {
 		response := fmt.Sprintf("* Other peeps: %v", strings.Join(users, ", "))
 		_, err := session.WriteString(response)
