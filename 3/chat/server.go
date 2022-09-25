@@ -22,19 +22,6 @@ func NewServer(logger zerolog.Logger) *Server {
 	return s
 }
 
-func (s *Server) startStateLog() {
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			<-ticker.C
-			s.mu.RLock()
-			s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
-			s.mu.RUnlock()
-		}
-	}()
-}
-
 func (s *Server) HandleTCP(conn net.Conn) {
 	defer func() {
 		conn.Close()
@@ -93,4 +80,18 @@ func (s *Server) removeSession(session *Session) {
 	sessions = append(sessions, s.sessions[:i]...)
 	sessions = append(sessions, s.sessions[i+1:]...)
 	s.sessions = sessions
+}
+
+func (s *Server) startStateLog() {
+	// FIXME: runs forever
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+		for {
+			<-ticker.C
+			s.mu.RLock()
+			s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
+			s.mu.RUnlock()
+		}
+	}()
 }
