@@ -37,7 +37,7 @@ func NewSession(conn net.Conn) (*Session, error) {
 	if err != nil {
 		// inform client of bad username
 		_, _ = s.WriteString("Invalid username (must be alphanumeric)")
-		return nil, fmt.Errorf("username: %w", err)
+		return nil, err
 	}
 	return &s, nil
 }
