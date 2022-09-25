@@ -5,7 +5,6 @@ import (
 	"net"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -25,7 +24,6 @@ func NewServer(logger zerolog.Logger) *Server {
 		msgs:   make(chan message),
 		logger: logger,
 	}
-	go s.startStateLog()
 	go s.startRelay()
 	return &s
 }
@@ -129,6 +127,7 @@ func (s *Server) startRelay() {
 	}
 }
 
+/*
 // startStateLog starts an infinite loop that prints the current sesssions every 5 seconds
 func (s *Server) startStateLog() {
 	// FIXME: runs forever
@@ -141,3 +140,4 @@ func (s *Server) startStateLog() {
 		s.mu.RUnlock()
 	}
 }
+*/
