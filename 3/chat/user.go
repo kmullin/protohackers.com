@@ -4,11 +4,11 @@ import (
 	"unicode"
 )
 
-type User struct {
+type user struct {
 	Name string
 }
 
-func (u User) IsValid() bool {
+func (u user) IsValid() bool {
 	if len(u.Name) == 0 || !isAlphaNumeric(u.Name) {
 		return false
 	}

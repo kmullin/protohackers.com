@@ -12,7 +12,7 @@ import (
 const welcomeMessage = "Welcome to budgetchat! What shall I call you?"
 
 type Session struct {
-	User       User
+	User       user
 	TimeJoined time.Time
 	recvC      chan message
 	sendC      chan message
@@ -39,22 +39,22 @@ func NewSession(conn net.Conn) (*Session, error) {
 	return &s, nil
 }
 
-func (s *Session) getUserName() (User, error) {
+func (s *Session) getUserName() (user, error) {
 	// start session with a welcome message
 	_, err := s.WriteString(welcomeMessage)
 	if err != nil {
-		return User{}, err
+		return user{}, err
 	}
 	msg, err := s.readMessage()
 	if err != nil {
-		return User{}, err
+		return user{}, err
 	}
 
-	user := User{msg.String()}
-	if !user.IsValid() {
-		return User{}, fmt.Errorf("invalid username: %q", user.Name)
+	u := user{msg.String()}
+	if !u.IsValid() {
+		return user{}, fmt.Errorf("invalid username: %q", u.Name)
 	}
-	return user, nil
+	return u, nil
 }
 
 // readMessage reads a single message from the connection
