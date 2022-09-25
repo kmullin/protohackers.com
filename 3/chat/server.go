@@ -14,13 +14,20 @@ type Server struct {
 	sessions []*Session
 	mu       *sync.RWMutex
 
+	msg chan message
+
 	logger zerolog.Logger // TODO: interface
 }
 
 func NewServer(logger zerolog.Logger) *Server {
-	s := &Server{logger: logger, mu: new(sync.RWMutex)}
-	s.startStateLog()
-	return s
+	s := Server{
+		mu:     new(sync.RWMutex),
+		msg:    make(chan message),
+		logger: logger,
+	}
+	go s.startStateLog()
+	go s.startRelay()
+	return &s
 }
 
 func (s *Server) HandleTCP(conn net.Conn) {
@@ -93,16 +100,18 @@ func (s *Server) removeSession(session *Session) {
 	s.sessions = sessions
 }
 
+func (s *Server) startRelay() {
+
+}
+
 func (s *Server) startStateLog() {
 	// FIXME: runs forever
-	go func() {
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-		for {
-			<-ticker.C
-			s.mu.RLock()
-			s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
-			s.mu.RUnlock()
-		}
-	}()
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		<-ticker.C
+		s.mu.RLock()
+		s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
+		s.mu.RUnlock()
+	}
 }
