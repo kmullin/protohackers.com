@@ -42,9 +42,12 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		return
 	}
 
-	_ = s.announceSession(session)
+	s.announceJoin(session)
 	s.addSession(session)
-	defer s.removeSession(session)
+	defer func() {
+		s.removeSession(session)
+		s.announceLeave(session)
+	}()
 	s.logger.Info().Interface("session", session).Msg("user joined")
 
 	err = session.ReadAll(s.msgs)
@@ -54,8 +57,8 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	}
 }
 
-// announceSession announces session to all current active sessions
-func (s *Server) announceSession(session *Session) error {
+// announceJoin announces session to all current active sessions
+func (s *Server) announceJoin(session *Session) {
 	var users []string
 	s.mu.RLock()
 	for _, as := range s.sessions {
@@ -72,7 +75,18 @@ func (s *Server) announceSession(session *Session) error {
 	if err != nil {
 		s.logger.Err(err).Interface("session", session).Msg("writing to session")
 	}
-	return nil
+}
+
+// announceLeave announces to all other sessions the leaving of another user
+func (s *Server) announceLeave(session *Session) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, as := range s.sessions {
+		_, err := as.WriteString(fmt.Sprintf("* %v has left the room", session.User))
+		if err != nil {
+			s.logger.Err(err).Interface("session", s).Msg("writing to session")
+		}
+	}
 }
 
 // addSession adds a session to the global session state
