@@ -14,7 +14,7 @@ type Server struct {
 	sessions []*Session
 	mu       *sync.RWMutex
 
-	msg chan message
+	msgs chan message
 
 	logger zerolog.Logger // TODO: interface
 }
@@ -22,7 +22,7 @@ type Server struct {
 func NewServer(logger zerolog.Logger) *Server {
 	s := Server{
 		mu:     new(sync.RWMutex),
-		msg:    make(chan message),
+		msgs:   make(chan message),
 		logger: logger,
 	}
 	go s.startStateLog()
@@ -47,13 +47,14 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	defer s.removeSession(session)
 	s.logger.Info().Interface("session", session).Msg("user joined")
 
-	err = session.ReadAll()
+	err = session.ReadAll(s.msgs)
 	if err != nil {
 		s.logger.Err(err).Msg("")
 		return
 	}
 }
 
+// announceSession announces session to all current active sessions
 func (s *Server) announceSession(session *Session) error {
 	var users []string
 	s.mu.RLock()
@@ -76,12 +77,14 @@ func (s *Server) announceSession(session *Session) error {
 	return nil
 }
 
+// addSession adds a session to the global session state
 func (s *Server) addSession(session *Session) {
 	s.mu.Lock()
 	s.sessions = append(s.sessions, session)
 	s.mu.Unlock()
 }
 
+// removeSession removes the session from the global session state
 func (s *Server) removeSession(session *Session) {
 	var i int
 	var sesh *Session
@@ -100,10 +103,18 @@ func (s *Server) removeSession(session *Session) {
 	s.sessions = sessions
 }
 
+// startRelay starts a loop on reading the channel given to each sesssion
 func (s *Server) startRelay() {
-
+	for msg := range s.msgs {
+		s.mu.RLock()
+		for _, sesh := range s.sessions {
+			_, _ = sesh.WriteString(msg.String())
+		}
+		s.mu.RUnlock()
+	}
 }
 
+// startStateLog starts an infinite loop that prints the current sesssions every 5 seconds
 func (s *Server) startStateLog() {
 	// FIXME: runs forever
 	ticker := time.NewTicker(5 * time.Second)

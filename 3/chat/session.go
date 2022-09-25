@@ -73,7 +73,7 @@ func (s *Session) readMessage() (message, error) {
 	return m, nil
 }
 
-func (s *Session) ReadAll() error {
+func (s *Session) ReadAll(c chan<- message) error {
 	for s.scanner.Scan() {
 		m := message(s.scanner.Bytes())
 		if !m.IsValid() {
@@ -81,6 +81,7 @@ func (s *Session) ReadAll() error {
 			continue
 		}
 		log.Info().Str("user", s.User.Name).Str("msg", m.String()).Msg("")
+		c <- m
 	}
 	return s.scanner.Err()
 }
