@@ -2,6 +2,7 @@ package chat
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -10,6 +11,8 @@ import (
 )
 
 const welcomeMessage = "Welcome to budgetchat! What shall I call you?"
+
+var errInvalidMsg = errors.New("invalid msg")
 
 type Session struct {
 	User       user
@@ -34,7 +37,7 @@ func NewSession(conn net.Conn) (*Session, error) {
 	if err != nil {
 		// inform client of bad username
 		_, _ = s.WriteString("Invalid username (must be alphanumeric)")
-		return nil, fmt.Errorf("reading username: %w", err)
+		return nil, fmt.Errorf("username: %w", err)
 	}
 	return &s, nil
 }
@@ -52,7 +55,7 @@ func (s *Session) getUserName() (user, error) {
 
 	u := user{msg.String()}
 	if !u.IsValid() {
-		return user{}, fmt.Errorf("invalid username: %q", u.Name)
+		return user{}, fmt.Errorf("invalid username: %v", u.Name)
 	}
 	return u, nil
 }
@@ -65,7 +68,7 @@ func (s *Session) readMessage() (message, error) {
 
 	m := message(s.scanner.Text())
 	if !m.IsValid() {
-		return message(""), fmt.Errorf("invalid msg")
+		return message(""), errInvalidMsg
 	}
 	return m, nil
 }
@@ -74,7 +77,7 @@ func (s *Session) ReadAll() error {
 	for s.scanner.Scan() {
 		m := message(s.scanner.Bytes())
 		if !m.IsValid() {
-			log.Debug().Interface("msg", m).Msg("invalid msg")
+			log.Err(errInvalidMsg).Interface("msg", m).Msg("")
 			continue
 		}
 		log.Info().Str("user", s.User.Name).Str("msg", m.String()).Msg("")
