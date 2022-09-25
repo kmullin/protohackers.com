@@ -3,6 +3,7 @@ package chat
 import (
 	"fmt"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,12 +48,21 @@ func (s *Server) HandleTCP(conn net.Conn) {
 }
 
 func (s *Server) announceSession(session *Session) error {
+	var users []string
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, as := range s.sessions {
 		_, err := as.WriteString(fmt.Sprintf("* %v has entered the room", session.User))
 		if err != nil {
 			s.logger.Err(err).Interface("session", s).Msg("writing to session")
+		}
+		users = append(users, as.User.Name)
+	}
+	if len(users) > 0 {
+		response := fmt.Sprintf("* Other peeps: %v", strings.Join(users, ", "))
+		_, err := session.WriteString(response)
+		if err != nil {
+			s.logger.Err(err).Interface("session", session).Msg("writing to session")
 		}
 	}
 	return nil
