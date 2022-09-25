@@ -5,18 +5,21 @@ import (
 )
 
 // message is a single line of ASCII text
-type message string
-
-func (m message) String() string {
-	return string(m)
+type message struct {
+	msg     string
+	session *Session
 }
 
-func (m message) IsValid() bool {
-	if len(m) == 0 {
+func (m *message) String() string {
+	return m.msg
+}
+
+func (m *message) IsValid() bool {
+	if len(m.msg) == 0 {
 		return false
 	}
-	for i := 0; i < len(m); i++ {
-		if m[i] > unicode.MaxASCII {
+	for i := 0; i < len(m.msg); i++ {
+		if m.msg[i] > unicode.MaxASCII {
 			return false
 		}
 	}

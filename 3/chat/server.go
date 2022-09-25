@@ -108,7 +108,10 @@ func (s *Server) startRelay() {
 	for msg := range s.msgs {
 		s.mu.RLock()
 		for _, sesh := range s.sessions {
-			_, _ = sesh.WriteString(msg.String())
+			if sesh != msg.session {
+				m := fmt.Sprintf("[%s] %s", msg.session.User.Name, msg.msg)
+				_, _ = sesh.WriteString(m)
+			}
 		}
 		s.mu.RUnlock()
 	}

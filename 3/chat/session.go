@@ -61,21 +61,21 @@ func (s *Session) getUserName() (user, error) {
 }
 
 // readMessage reads a single message from the connection
-func (s *Session) readMessage() (message, error) {
+func (s *Session) readMessage() (*message, error) {
 	if !s.scanner.Scan() {
-		return message(""), fmt.Errorf("err scanning")
+		return nil, fmt.Errorf("err scanning")
 	}
 
-	m := message(s.scanner.Text())
+	m := message{s.scanner.Text(), s}
 	if !m.IsValid() {
-		return message(""), errInvalidMsg
+		return nil, errInvalidMsg
 	}
-	return m, nil
+	return &m, nil
 }
 
 func (s *Session) ReadAll(c chan<- message) error {
 	for s.scanner.Scan() {
-		m := message(s.scanner.Bytes())
+		m := message{s.scanner.Text(), s}
 		if !m.IsValid() {
 			log.Err(errInvalidMsg).Msg("")
 			continue
