@@ -67,12 +67,10 @@ func (s *Server) announceSession(session *Session) error {
 	}
 	s.mu.RUnlock()
 
-	if len(users) > 0 {
-		response := fmt.Sprintf("* Other peeps: %v", strings.Join(users, ", "))
-		_, err := session.WriteString(response)
-		if err != nil {
-			s.logger.Err(err).Interface("session", session).Msg("writing to session")
-		}
+	response := fmt.Sprintf("* Other peeps: %v", strings.Join(users, ", "))
+	_, err := session.WriteString(response)
+	if err != nil {
+		s.logger.Err(err).Interface("session", session).Msg("writing to session")
 	}
 	return nil
 }
