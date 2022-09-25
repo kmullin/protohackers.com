@@ -12,11 +12,11 @@ import (
 )
 
 func main() {
-	var jsonLogging bool
-	flag.BoolVar(&jsonLogging, "json", false, "turn on json logging")
+	var textLogging bool
+	flag.BoolVar(&textLogging, "text", false, "turn on text logging")
 	flag.Parse()
 
-	if !jsonLogging {
+	if textLogging {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
