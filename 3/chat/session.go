@@ -86,3 +86,12 @@ func (s *Session) ReadAll() error {
 func (s *Session) WriteString(msg string) (int, error) {
 	return fmt.Fprintln(s.conn, msg)
 }
+
+// msgSplitFunc is a bufio.SplitFunc that acts like ScanLines but ignores extra invalid lines on EOF
+func msgSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
+	if atEOF {
+		// if we're already at EOF, we dont want any remaining data
+		return 0, nil, nil
+	}
+	return bufio.ScanLines(data, atEOF)
+}

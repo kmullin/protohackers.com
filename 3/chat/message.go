@@ -1,7 +1,6 @@
 package chat
 
 import (
-	"bufio"
 	"unicode"
 )
 
@@ -22,12 +21,4 @@ func (m message) IsValid() bool {
 		}
 	}
 	return true
-}
-
-func msgSplitFunc(data []byte, atEOF bool) (int, []byte, error) {
-	if atEOF {
-		// if we're already at EOF, we dont want any remaining data
-		return 0, nil, nil
-	}
-	return bufio.ScanLines(data, atEOF)
 }
