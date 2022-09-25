@@ -52,7 +52,7 @@ func (s *Server) announceSession(session *Session) error {
 	for _, as := range s.sessions {
 		_, err := as.WriteString(fmt.Sprintf("* %v has entered the room", session.User))
 		if err != nil {
-			s.logger.Err(err).Interface("session", s)
+			s.logger.Err(err).Interface("session", s).Msg("writing to session")
 		}
 	}
 	return nil
