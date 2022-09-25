@@ -77,7 +77,7 @@ func (s *Session) ReadAll() error {
 	for s.scanner.Scan() {
 		m := message(s.scanner.Bytes())
 		if !m.IsValid() {
-			log.Err(errInvalidMsg).Interface("msg", m).Msg("")
+			log.Err(errInvalidMsg).Msg("")
 			continue
 		}
 		log.Info().Str("user", s.User.Name).Str("msg", m.String()).Msg("")
