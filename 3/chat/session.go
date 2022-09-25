@@ -14,8 +14,6 @@ const welcomeMessage = "Welcome to budgetchat! What shall I call you?"
 type Session struct {
 	User       user
 	TimeJoined time.Time
-	recvC      chan message
-	sendC      chan message
 
 	conn    net.Conn
 	scanner *bufio.Scanner
@@ -25,7 +23,6 @@ func NewSession(conn net.Conn) (*Session, error) {
 	var err error
 	var s Session
 	s.TimeJoined = time.Now()
-	s.recvC, s.sendC = make(chan message), make(chan message)
 	s.conn = conn
 
 	// setup a scanner with a custom split function
