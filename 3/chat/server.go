@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ func NewServer(logger zerolog.Logger) *Server {
 
 func (s *Server) startStateLog() {
 	go func() {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 		for {
 			<-ticker.C
@@ -46,6 +47,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		return
 	}
 
+	_ = s.announceSession(session)
 	s.addSession(session)
 	defer s.removeSession(session)
 	s.logger.Info().Interface("session", session).Msg("user joined")
@@ -55,6 +57,18 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		s.logger.Err(err).Msg("")
 		return
 	}
+}
+
+func (s *Server) announceSession(session *Session) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, as := range s.sessions {
+		_, err := as.WriteString(fmt.Sprintf("* %v has entered the room", session.User))
+		if err != nil {
+			s.logger.Err(err).Interface("session", s)
+		}
+	}
+	return nil
 }
 
 func (s *Server) addSession(session *Session) {
