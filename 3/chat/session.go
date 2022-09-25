@@ -27,7 +27,10 @@ func NewSession(conn net.Conn) (*Session, error) {
 	s.TimeJoined = time.Now()
 	s.recvC, s.sendC = make(chan message), make(chan message)
 	s.conn = conn
-	s.scanner = bufio.NewScanner(conn)
+
+	// setup a scanner with a custom split function
+	// that enforces our message format
+	s.scanner = bufio.NewScanner(s.conn)
 	s.scanner.Split(msgSplitFunc)
 
 	s.User, err = s.getUserName()
