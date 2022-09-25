@@ -126,18 +126,3 @@ func (s *Server) startRelay() {
 		s.mu.RUnlock()
 	}
 }
-
-/*
-// startStateLog starts an infinite loop that prints the current sesssions every 5 seconds
-func (s *Server) startStateLog() {
-	// FIXME: runs forever
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for {
-		<-ticker.C
-		s.mu.RLock()
-		s.logger.Info().Interface("users", s.sessions).Msg("currently connected")
-		s.mu.RUnlock()
-	}
-}
-*/
