@@ -3,8 +3,3 @@ stages:
 
 include:
   - template: Jobs/Build.gitlab-ci.yml
-
-build:
-  services:
-    - name: 'docker:20.10.12-dind'
-      command: ['--tls=false', '--host=tcp://0.0.0.0:2375', '--registry-mirror=https://docker-proxy.nillum.net']
