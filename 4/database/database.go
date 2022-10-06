@@ -14,9 +14,13 @@ func NewDB() *Db {
 }
 
 func (db *Db) Status() map[string]string {
+	m := make(map[string]string)
 	db.mu.RLock()
 	defer db.mu.RUnlock()
-	return db.keys
+	for k, v := range db.keys {
+		m[k] = v
+	}
+	return m
 }
 
 func (db *Db) Insert(k, v string) {

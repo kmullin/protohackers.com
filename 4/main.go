@@ -27,6 +27,9 @@ func main() {
 
 	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 	server := NewServer(log.Logger)
-	server.Start(ctx)
+	err := server.Start(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msg("unable to listen")
+	}
 	<-ctx.Done()
 }
