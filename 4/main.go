@@ -5,13 +5,10 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
-
-const readTimeout = 100 * time.Millisecond
 
 func main() {
 	var textLogging bool

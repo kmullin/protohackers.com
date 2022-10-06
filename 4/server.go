@@ -13,6 +13,8 @@ import (
 	"github.com/rs/zerolog"
 )
 
+const readTimeout = 100 * time.Millisecond
+
 type server struct {
 	db     *database.Db
 	logger zerolog.Logger
@@ -81,8 +83,7 @@ func (s *server) logDbStatus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			f := s.db.Status()
-			s.logger.Debug().Interface("database", f).Msg("")
+			s.logger.Debug().Interface("database", s.db.Status()).Msg("")
 		}
 	}
 }
