@@ -27,14 +27,14 @@ func NewServer(log zerolog.Logger) *server {
 func (s *server) Start(ctx context.Context) error {
 	port := ":8080"
 	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
-		s.logger.Printf("Listening on %v...", port)
 		conn, err := reuse.ListenPacket("udp", port)
 		if err != nil {
-			s.logger.Printf("unable to listen: %v", err)
+			s.logger.Error().Err(err).Msg("unable to listen")
 		}
 		go s.handleUDP(ctx, conn)
 	}
 	go s.logDbStatus(ctx)
+	s.logger.Debug().Str("port", port).Msg("listening")
 	return nil
 }
 
@@ -48,30 +48,31 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		n, addr, err := readFrom(conn, buf[0:])
 		if err != nil {
 			if !errors.Is(err, os.ErrDeadlineExceeded) {
-				s.logger.Printf("UDP read err: %v", err)
+				s.logger.Error().Err(err).Msg("UDP read err")
 			}
 			continue
 		}
 
 		if n == bufSize {
-			s.logger.Printf("invalid message size %v from %v, ignoring", n, addr)
 			drained, err := drain(conn)
 			if err != nil {
-				s.logger.Printf("err draining: %v", err)
+				s.logger.Error().Err(err).Msg("err draining")
 			}
-			s.logger.Printf("drained %v bytes from %v", drained, addr)
+			s.logger.Debug().Int("bytes", n+drained).Str("addr", addr.String()).Msg("invalid message")
 			continue
 		}
 
-		s.logger.Printf("%v bytes received from %v: % x", n, addr, buf[:n])
+		s.logger.Debug().Int("bytes", n).Str("addr", addr.String()).Msg("")
 
 		m := NewMessage(buf[:n])
 		switch m.Type {
 		case messageInsert:
 			s.db.Insert(m.Key, m.Value)
 		case messageRetrieve:
+			v, _ := s.db.Retrieve(m.Key)
+			s.logger.Debug().Str("value", v).Msg("retrieved")
 		}
-		s.logger.Printf("msg %+v", m)
+		s.logger.Info().Interface("type", m.Type).Str("key", m.Key).Str("value", m.Value).Msg("")
 	}
 }
 
@@ -83,7 +84,8 @@ func (s *server) logDbStatus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			s.logger.Debug().Interface("database", s.db.Status()).Msg("")
+			d := s.db.Status()
+			s.logger.Debug().Interface("database", d).Int("size", len(d)).Msg("")
 		}
 	}
 }
