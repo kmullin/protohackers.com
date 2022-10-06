@@ -3,33 +3,36 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
 	"net"
 	"os"
 	"runtime"
 	"time"
 
+	"git.kpmullin.com/kmullin/protocolhackers.com/4/database"
 	reuse "github.com/libp2p/go-reuseport"
+	"github.com/rs/zerolog"
 )
 
 type server struct {
-	db *db
+	db     *database.Db
+	logger zerolog.Logger
 }
 
-func NewServer() *server {
-	return &server{NewDB()}
+func NewServer(log zerolog.Logger) *server {
+	return &server{database.NewDB(), log}
 }
 
 func (s *server) Start(ctx context.Context) error {
 	port := ":8080"
 	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
-		log.Printf("Listening on %v...", port)
+		s.logger.Printf("Listening on %v...", port)
 		conn, err := reuse.ListenPacket("udp", port)
 		if err != nil {
-			log.Fatalf("unable to listen: %v", err)
+			s.logger.Printf("unable to listen: %v", err)
 		}
 		go s.handleUDP(ctx, conn)
 	}
+	go s.logDbStatus(ctx)
 	return nil
 }
 
@@ -43,25 +46,44 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		n, addr, err := readFrom(conn, buf[0:])
 		if err != nil {
 			if !errors.Is(err, os.ErrDeadlineExceeded) {
-				log.Printf("UDP read err: %v", err)
+				s.logger.Printf("UDP read err: %v", err)
 			}
 			continue
 		}
 
 		if n == bufSize {
-			log.Printf("invalid message size %v from %v, ignoring", n, addr)
+			s.logger.Printf("invalid message size %v from %v, ignoring", n, addr)
 			drained, err := drain(conn)
 			if err != nil {
-				log.Printf("err draining: %v", err)
+				s.logger.Printf("err draining: %v", err)
 			}
-			log.Printf("drained %v bytes from %v", drained, addr)
+			s.logger.Printf("drained %v bytes from %v", drained, addr)
 			continue
 		}
 
-		log.Printf("%v bytes received from %v: % x", n, addr, buf[:n])
-		m := msg(buf[:n])
-		k, v := m.KV()
-		log.Printf("msg %q = %q", k, v)
+		s.logger.Printf("%v bytes received from %v: % x", n, addr, buf[:n])
+
+		m := NewMessage(buf[:n])
+		switch m.Type {
+		case messageInsert:
+			s.db.Insert(m.Key, m.Value)
+		case messageRetrieve:
+		}
+		s.logger.Printf("msg %+v", m)
+	}
+}
+
+func (s *server) logDbStatus(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			f := s.db.Status()
+			s.logger.Debug().Interface("database", f).Msg("")
+		}
 	}
 }
 

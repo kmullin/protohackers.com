@@ -1,10 +1,6 @@
 package main
 
-import (
-	"fmt"
-	"testing"
-)
-
+/*
 func TestMsg(t *testing.T) {
 	// foo=bar will insert a key foo with value "bar".
 	// foo=bar=baz will insert a key foo with value "bar=baz".
@@ -36,3 +32,4 @@ func TestMsg(t *testing.T) {
 		})
 	}
 }
+*/

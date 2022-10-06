@@ -1,19 +1,40 @@
 package main
 
-import "strings"
+import (
+	"bytes"
+)
 
 const keySeparator = "="
 
-type msg string
+type messageType int
 
-func (m msg) IsInsert() bool {
-	return strings.Contains(string(m), keySeparator)
+const (
+	messageInsert messageType = iota
+	messageRetrieve
+)
+
+type message struct {
+	Type  messageType // insert or retrieve
+	Key   string
+	Value string
 }
 
-func (m msg) KV() (string, string) {
-	if !m.IsInsert() {
-		return "", ""
+func NewMessage(b []byte) *message {
+	var msg message
+	if bytes.Contains(b, []byte(keySeparator)) {
+		msg.Type = messageInsert
+		m := bytes.SplitN(b, []byte(keySeparator), 2)
+
+		if len(m) != 2 {
+			panic("bad message length")
+		}
+
+		msg.Key = string(m[0])
+		msg.Value = string(m[1])
+	} else {
+		msg.Type = messageRetrieve
+		msg.Key = string(b)
 	}
-	k := strings.SplitN(string(m), keySeparator, 2)
-	return k[0], k[1]
+
+	return &msg
 }
