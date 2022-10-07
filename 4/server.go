@@ -28,12 +28,11 @@ func NewServer(log zerolog.Logger) *server {
 	return &server{database.NewDB(), log}
 }
 
-func (s *server) Start(ctx context.Context) error {
+func (s *server) Start(ctx context.Context, address string) error {
 	var g errgroup.Group
-	port := ":8080"
 	for i := 0; i < runtime.GOMAXPROCS(0); i++ {
 		g.Go(func() error {
-			conn, err := reuse.ListenPacket("udp", port)
+			conn, err := reuse.ListenPacket("udp", address)
 			if err != nil {
 				return err
 			}
@@ -48,7 +47,7 @@ func (s *server) Start(ctx context.Context) error {
 	}
 
 	go s.logDbStatus(ctx)
-	s.logger.Debug().Str("port", port).Msg("listening")
+	s.logger.Debug().Str("address", address).Msg("listening")
 	return nil
 }
 
