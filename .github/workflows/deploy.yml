@@ -11,9 +11,10 @@ env:
 
 jobs:
   deploy:
-      name: Deploy app
-      runs-on: ubuntu-latest
-      steps:
-        - uses: actions/checkout@v2
-        - uses: superfly/flyctl-actions/setup-flyctl@master
-        - run: flyctl deploy --remote-only --build-arg problem="${{ github.event.inputs.problem }}"
+    name: Deploy app
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v2
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --build-arg problem="${{ github.event.inputs.problem }}"
