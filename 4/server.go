@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"runtime"
@@ -13,6 +14,8 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 )
+
+const version = "kmullin's terrible K/V Store 420"
 
 const readTimeout = 100 * time.Millisecond
 
@@ -78,11 +81,23 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 
 		switch m.Type {
 		case messageInsert:
-			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Msg("")
+			if m.Key == "version" {
+				s.logger.Info().Msg("version request")
+				continue
+			}
 			s.db.Insert(m.Key, m.Value)
+			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Msg("")
 		case messageRetrieve:
-			v, _ := s.db.Retrieve(m.Key)
-			s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Msg("")
+			var v string
+			if m.Key == "version" {
+				s.logger.Info().Msg("version request")
+				v = version
+			} else {
+				v, _ = s.db.Retrieve(m.Key)
+				s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Msg("")
+			}
+			response := fmt.Sprintf("%v=%v", m.Key, v)
+			conn.WriteTo([]byte(response), addr)
 		}
 		s.logger.Debug().Int("bytes", n).Str("addr", addr.String()).Msg("done")
 	}
