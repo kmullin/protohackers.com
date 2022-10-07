@@ -85,7 +85,7 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 				continue
 			}
 			s.db.Insert(m.Key, m.Value)
-			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Msg("")
+			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
 		case messageRetrieve:
 			var v string
 			if m.Key == "version" {
@@ -93,7 +93,7 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 				v = version
 			} else {
 				v, _ = s.db.Retrieve(m.Key)
-				s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Msg("")
+				s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Send()
 			}
 			response := fmt.Sprintf("%v=%v", m.Key, v)
 			conn.WriteTo([]byte(response), addr)
@@ -110,8 +110,7 @@ func (s *server) logDbStatus(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			d := s.db.Status()
-			s.logger.Debug().Interface("database", d).Int("size", len(d)).Msg("")
+			s.logger.Debug().Int("entries", s.db.Entries()).Msg("database")
 		}
 	}
 }

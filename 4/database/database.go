@@ -13,14 +13,10 @@ func NewDB() *Db {
 	return &Db{make(map[string]string), new(sync.RWMutex)}
 }
 
-func (db *Db) Status() map[string]string {
-	m := make(map[string]string)
+func (db *Db) Entries() int {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
-	for k, v := range db.keys {
-		m[k] = v
-	}
-	return m
+	return len(db.keys)
 }
 
 func (db *Db) Insert(k, v string) {
