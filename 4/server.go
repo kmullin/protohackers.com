@@ -82,10 +82,10 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		case messageInsert:
 			if m.Key == "version" {
 				s.logger.Info().Msg("version request")
-				continue
+			} else {
+				s.db.Insert(m.Key, m.Value)
+				s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
 			}
-			s.db.Insert(m.Key, m.Value)
-			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
 		case messageRetrieve:
 			var v string
 			if m.Key == "version" {
