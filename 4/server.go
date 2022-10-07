@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/4/database"
+	"github.com/kmullin/protohackers.com/4/database"
 	reuse "github.com/libp2p/go-reuseport"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"

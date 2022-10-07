@@ -11,7 +11,7 @@ import (
 	"math"
 	"net"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/server"
+	"github.com/kmullin/protohackers.com/server"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/test"
+	"github.com/kmullin/protohackers.com/test"
 )
 
 func TestSession(t *testing.T) {

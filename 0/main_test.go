@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/test"
+	"github.com/kmullin/protohackers.com/test"
 )
 
 func TestEcho(t *testing.T) {

@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/2/message"
-	"git.kpmullin.com/kmullin/protocolhackers.com/server"
+	"github.com/kmullin/protohackers.com/2/message"
+	"github.com/kmullin/protohackers.com/server"
 )
 
 func main() {

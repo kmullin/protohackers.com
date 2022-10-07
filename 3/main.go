@@ -7,8 +7,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/3/chat"
-	"git.kpmullin.com/kmullin/protocolhackers.com/server"
+	"github.com/kmullin/protohackers.com/3/chat"
+	"github.com/kmullin/protohackers.com/server"
 )
 
 func main() {

@@ -1,4 +1,4 @@
-module git.kpmullin.com/kmullin/protocolhackers.com
+module github.com/kmullin/protohackers.com
 
 go 1.18
 

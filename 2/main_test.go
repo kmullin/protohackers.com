@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"git.kpmullin.com/kmullin/protocolhackers.com/2/message"
-	"git.kpmullin.com/kmullin/protocolhackers.com/test"
+	"github.com/kmullin/protohackers.com/2/message"
+	"github.com/kmullin/protohackers.com/test"
 	"github.com/stretchr/testify/assert"
 )
 
