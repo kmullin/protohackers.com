@@ -15,6 +15,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// All requests and responses must be shorter than 1000 bytes.
+const bufSize = 1000
+
 const version = "kmullin's terrible K/V Store 420"
 
 const readTimeout = 100 * time.Millisecond
@@ -55,8 +58,6 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 	defer conn.Close()
 	// TODO: something with context
 
-	// All requests and responses must be shorter than 1000 bytes.
-	const bufSize = 1000
 	buf := make([]byte, bufSize)
 	for {
 		n, addr, err := readFrom(conn, buf[0:])
@@ -68,11 +69,10 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		}
 
 		if n == bufSize {
-			drained, err := drain(conn)
-			if err != nil {
+			if err := drain(conn); err != nil {
 				s.logger.Error().Err(err).Msg("err draining")
 			}
-			s.logger.Debug().Int("bytes", n+drained).Str("addr", addr.String()).Msg("invalid message")
+			s.logger.Debug().Int("bytes", n).Str("addr", addr.String()).Msg("invalid message")
 			continue
 		}
 
@@ -110,19 +110,18 @@ func (s *server) logDbStatus(ctx context.Context) {
 
 func readFrom(conn net.PacketConn, buf []byte) (int, net.Addr, error) {
 	conn.SetDeadline(time.Now().Add(readTimeout))
-	return conn.ReadFrom(buf[0:])
+	return conn.ReadFrom(buf)
 }
 
 // drain reads any remaining bytes in the PacketConn, returns total bytes read, and any error encountered
-func drain(conn net.PacketConn) (int, error) {
-	var n, total int
+func drain(conn net.PacketConn) error {
+	var n int
 	var err error
 
 	n = 1
 	buf := make([]byte, 4096)
 	for n > 0 {
 		n, _, err = readFrom(conn, buf[0:])
-		total += n
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				err = nil
@@ -130,7 +129,7 @@ func drain(conn net.PacketConn) (int, error) {
 			break
 		}
 	}
-	return total, err
+	return err
 }
 
 func responseMsg(k, v string) []byte {
