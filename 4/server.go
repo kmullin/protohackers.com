@@ -77,26 +77,19 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		}
 
 		m := NewMessage(buf[:n])
-
-		switch m.Type {
-		case messageInsert:
-			if m.Key == "version" {
+		switch {
+		case m.Key == "version":
+			if m.Type == messageRetrieve {
 				s.logger.Info().Msg("version request")
-			} else {
-				s.db.Insert(m.Key, m.Value)
-				s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
+				conn.WriteTo(responseMsg(m.Key, version), addr)
 			}
-		case messageRetrieve:
-			var v string
-			if m.Key == "version" {
-				s.logger.Info().Msg("version request")
-				v = version
-			} else {
-				v, _ = s.db.Retrieve(m.Key)
-				s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Send()
-			}
-			response := fmt.Sprintf("%v=%v", m.Key, v)
-			conn.WriteTo([]byte(response), addr)
+		case m.Type == messageInsert:
+			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
+			s.db.Insert(m.Key, m.Value)
+		case m.Type == messageRetrieve:
+			v, _ := s.db.Retrieve(m.Key)
+			conn.WriteTo(responseMsg(m.Key, v), addr)
+			s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Send()
 		}
 		s.logger.Debug().Int("bytes", n).Str("addr", addr.String()).Msg("done")
 	}
@@ -129,13 +122,17 @@ func drain(conn net.PacketConn) (int, error) {
 	buf := make([]byte, 4096)
 	for n > 0 {
 		n, _, err = readFrom(conn, buf[0:])
+		total += n
 		if err != nil {
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				err = nil
 			}
 			break
 		}
-		total += n
 	}
 	return total, err
+}
+
+func responseMsg(k, v string) []byte {
+	return []byte(fmt.Sprintf("%v=%v", k, v))
 }
