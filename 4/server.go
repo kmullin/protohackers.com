@@ -49,7 +49,6 @@ func (s *server) Start(ctx context.Context, address string) error {
 		return err
 	}
 
-	go s.logDbStatus(ctx)
 	s.logger.Debug().Str("address", address).Msg("listening")
 	return nil
 }
@@ -86,25 +85,13 @@ func (s *server) handleUDP(ctx context.Context, conn net.PacketConn) {
 		case m.Type == messageInsert:
 			s.logger.Info().Str("type", "insert").Str("key", m.Key).Str("value", m.Value).Send()
 			s.db.Insert(m.Key, m.Value)
+			s.logger.Debug().Int("entries", s.db.Entries()).Msg("new entry")
 		case m.Type == messageRetrieve:
 			v, _ := s.db.Retrieve(m.Key)
 			conn.WriteTo(responseMsg(m.Key, v), addr)
 			s.logger.Info().Str("type", "retrieve").Str("key", m.Key).Str("value", v).Send()
 		}
 		s.logger.Debug().Int("bytes", n).Str("addr", addr.String()).Msg("done")
-	}
-}
-
-func (s *server) logDbStatus(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			s.logger.Debug().Int("entries", s.db.Entries()).Msg("database")
-		}
 	}
 }
 
