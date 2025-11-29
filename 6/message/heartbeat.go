@@ -27,10 +27,5 @@ func (hb *WantHeartbeat) UnmarshalBinary(data []byte) error {
 type Heartbeat struct{}
 
 func (hb Heartbeat) MarshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-
-	if err := binary.Write(&buf, byteOrder, MsgTypeHeartbeat); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return []byte{MsgTypeHeartbeat}, nil
 }
