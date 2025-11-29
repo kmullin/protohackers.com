@@ -1,7 +1,6 @@
 package message
 
 import (
-	"bytes"
 	"encoding"
 	"encoding/binary"
 	"errors"
@@ -16,102 +15,15 @@ var ErrLargeMsg = errors.New("msg is too large")
 // MaxMsgLen is the maximum decimal value of a uint8
 const MaxMsgLen = int(^uint8(0))
 
-type Message interface {
+type serverMessage interface {
 	encoding.BinaryMarshaler
 }
 
-type Error struct {
-	Msg string
+type clientMessage interface {
+	encoding.BinaryUnmarshaler
 }
 
-func (e Error) MarshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-
-	if len(e.Msg) > MaxMsgLen {
-		return nil, ErrLargeMsg
-	}
-
-	msg := struct {
-		Type   uint8
-		StrLen uint8
-	}{
-		0x10, uint8(len(e.Msg)),
-	}
-
-	err := binary.Write(&buf, ByteOrder, &msg)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = buf.WriteString(e.Msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-type Ticket struct {
-	Plate      string
-	Road       int
-	Mile1      int
-	Timestamp1 time.Time
-	Mile2      int
-	Timestamp2 time.Time
-	Speed      int
-}
-
-func (t Ticket) MarshalBinary() ([]byte, error) {
-	var buf bytes.Buffer
-
-	msg := struct {
-		Type   uint8
-		StrLen uint8
-	}{
-		0x21, uint8(len(t.Plate)),
-	}
-
-	if err := binary.Write(&buf, ByteOrder, &msg); err != nil {
-		return nil, err
-	}
-
-	if _, err := buf.WriteString(t.Plate); err != nil {
-		return nil, err
-	}
-
-	msg2 := struct {
-		Road       uint16
-		Mile1      uint16
-		Timestamp1 uint32
-		Mile2      uint16
-		Timestamp2 uint32
-		Speed      uint16
-	}{
-		uint16(t.Road),
-		uint16(t.Mile1),
-		uint32(t.Timestamp1.Unix()),
-		uint16(t.Mile2),
-		uint32(t.Timestamp2.Unix()),
-		uint16(t.Speed),
-	}
-
-	if err := binary.Write(&buf, ByteOrder, &msg2); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
-}
-
-type Plate struct {
-	Plate     string
-	Timestamp time.Time
-}
-
-func (p Plate) MarshalBinary() ([]byte, error) {
-	return nil, nil
-}
-
-func New(r io.Reader) (Message, error) {
+func New(r io.Reader) (clientMessage, error) {
 	var t uint8
 
 	// find out which message we receive
@@ -122,27 +34,49 @@ func New(r io.Reader) (Message, error) {
 
 	switch t {
 	case 0x20: // Plate
-		var l uint8
+		var p Plate
 
-		if err := binary.Read(r, ByteOrder, &l); err != nil {
+		b, err := io.ReadAll(r)
+		if err != nil {
 			return nil, err
 		}
 
-		buf := make([]byte, l)
-		if err := binary.Read(r, ByteOrder, &buf); err != nil {
-			return nil, err
-		}
-
-		var ts uint32
-		if err := binary.Read(r, ByteOrder, &ts); err != nil {
-			return nil, err
-		}
-
-		return &Plate{Plate: string(buf), Timestamp: time.Unix(int64(ts), 0).UTC()}, nil
+		err = p.UnmarshalBinary(b)
+		return &p, err
 	case 0x40:
 	default:
 		return nil, errors.New("unknown message received")
 	}
 
 	return nil, nil
+}
+
+// readString will read a length prefixed string from r
+func readString(r io.Reader) (string, error) {
+	var l uint8
+	if err := binary.Read(r, ByteOrder, &l); err != nil {
+		return "", err
+	}
+
+	buf := make([]byte, l)
+	if err := binary.Read(r, ByteOrder, &buf); err != nil {
+		return "", err
+	}
+
+	return string(buf), nil
+}
+
+// readTime will read the timestamp from r
+func readTime(r io.Reader) (time.Time, error) {
+	var ts uint32
+	if err := binary.Read(r, ByteOrder, &ts); err != nil {
+		return time.Unix(-1, 0).UTC(), err
+	}
+
+	return toTime(ts), nil
+}
+
+// toTime takes the timestamps from the raw input type and converts it into time.Time
+func toTime(t uint32) time.Time {
+	return time.Unix(int64(t), 0).UTC()
 }
