@@ -22,7 +22,7 @@ func TestSession(t *testing.T) {
 			client, server := test.Conn(t)
 
 			// write some valid name without a trailing newline '\n'
-			fmt.Fprintf(client, c.Payload)
+			fmt.Fprint(client, c.Payload)
 			client.Close()
 
 			session, err := NewSession(server)
