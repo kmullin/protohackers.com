@@ -11,17 +11,17 @@ import (
 func TestIAmDispatcher(t *testing.T) {
 	cases := []struct {
 		Msg      []byte
-		Expected *iAmDispatcher
+		Expected *IAmDispatcher
 	}{
 		{
 			Msg: []byte{0x81, 0x01, 0x00, 0x42},
-			Expected: &iAmDispatcher{
+			Expected: &IAmDispatcher{
 				Roads: []int{66},
 			},
 		},
 		{
 			Msg: []byte{0x81, 0x03, 0x00, 0x42, 0x01, 0x70, 0x13, 0x88},
-			Expected: &iAmDispatcher{
+			Expected: &IAmDispatcher{
 				Roads: []int{66, 368, 5000},
 			},
 		},

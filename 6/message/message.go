@@ -54,9 +54,9 @@ func New(r io.Reader) (clientMessage, error) {
 	case MsgTypeWantHeartbeat:
 		msg = new(WantHeartbeat)
 	case MsgTypeIAmCamera:
-		msg = new(iAmCamera)
+		msg = new(IAmCamera)
 	case MsgTypeIAmDispatcher:
-		msg = new(iAmDispatcher)
+		msg = new(IAmDispatcher)
 	default:
 		return nil, errors.New("unknown message received")
 	}

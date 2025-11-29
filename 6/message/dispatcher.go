@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 )
 
-type iAmDispatcher struct {
+type IAmDispatcher struct {
 	Roads []int
 }
 
-func (iad *iAmDispatcher) UnmarshalBinary(data []byte) error {
+func (iad *IAmDispatcher) UnmarshalBinary(data []byte) error {
 	r := bytes.NewReader(data)
 
 	var numRoads uint8

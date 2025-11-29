@@ -11,11 +11,11 @@ import (
 func TestIAmCamera(t *testing.T) {
 	cases := []struct {
 		Msg      []byte
-		Expected *iAmCamera
+		Expected *IAmCamera
 	}{
 		{
 			Msg: []byte{0x80, 0x00, 0x42, 0x00, 0x64, 0x00, 0x3c},
-			Expected: &iAmCamera{
+			Expected: &IAmCamera{
 				Road:  66,
 				Mile:  100,
 				Limit: 60,
@@ -23,7 +23,7 @@ func TestIAmCamera(t *testing.T) {
 		},
 		{
 			Msg: []byte{0x80, 0x01, 0x70, 0x04, 0xd2, 0x00, 0x28},
-			Expected: &iAmCamera{
+			Expected: &IAmCamera{
 				Road:  368,
 				Mile:  1234,
 				Limit: 40,

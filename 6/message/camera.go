@@ -5,13 +5,13 @@ import (
 	"encoding/binary"
 )
 
-type iAmCamera struct {
+type IAmCamera struct {
 	Road  int
 	Mile  int
 	Limit int
 }
 
-func (iac *iAmCamera) UnmarshalBinary(data []byte) error {
+func (iac *IAmCamera) UnmarshalBinary(data []byte) error {
 	r := bytes.NewReader(data)
 
 	msg := struct {
