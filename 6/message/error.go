@@ -16,20 +16,12 @@ func (e Error) MarshalBinary() ([]byte, error) {
 		return nil, ErrLargeMsg
 	}
 
-	msg := struct {
-		Type   uint8
-		StrLen uint8
-	}{
-		0x10, uint8(len(e.Msg)),
-	}
-
-	err := binary.Write(&buf, ByteOrder, &msg)
-	if err != nil {
+	t := uint8(0x10)
+	if err := binary.Write(&buf, ByteOrder, &t); err != nil {
 		return nil, err
 	}
 
-	_, err = buf.WriteString(e.Msg)
-	if err != nil {
+	if err := writeString(&buf, e.Msg); err != nil {
 		return nil, err
 	}
 

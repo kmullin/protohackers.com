@@ -23,6 +23,11 @@ type clientMessage interface {
 	encoding.BinaryUnmarshaler
 }
 
+type stringWriter interface {
+	io.StringWriter
+	io.Writer
+}
+
 func New(r io.Reader) (clientMessage, error) {
 	var t uint8
 
@@ -49,6 +54,19 @@ func New(r io.Reader) (clientMessage, error) {
 	}
 
 	return nil, nil
+}
+
+func writeString(w stringWriter, s string) error {
+	l := uint8(len(s))
+
+	if err := binary.Write(w, ByteOrder, &l); err != nil {
+		return err
+	}
+
+	if _, err := w.WriteString(s); err != nil {
+		return err
+	}
+	return nil
 }
 
 // readString will read a length prefixed string from r
