@@ -10,7 +10,7 @@ type Plate struct {
 	Timestamp time.Time
 }
 
-func (p Plate) UnmarshalBinary(data []byte) error {
+func (p *Plate) UnmarshalBinary(data []byte) error {
 	var err error
 
 	r := bytes.NewReader(data)
