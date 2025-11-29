@@ -8,6 +8,8 @@ import (
 )
 
 type Server struct {
+	//observations []observation
+	//mu     *sync.RWMutex
 	logger zerolog.Logger
 }
 
@@ -24,7 +26,10 @@ type Picture struct {
 
 func (s *Server) HandleTCP(conn net.Conn) {
 	// tear down client connection after disconnect
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("disconnected")
+	}()
+	s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("connected")
 
-	s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("disconnected")
 }
