@@ -12,7 +12,7 @@ type Error struct {
 func (e Error) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
-	if err := binary.Write(&buf, ByteOrder, MsgTypeError); err != nil {
+	if err := binary.Write(&buf, byteOrder, MsgTypeError); err != nil {
 		return nil, err
 	}
 

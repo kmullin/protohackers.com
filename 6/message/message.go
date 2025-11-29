@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var ByteOrder = binary.BigEndian
+var byteOrder = binary.BigEndian
 
 var ErrLargeMsg = errors.New("msg is too large")
 
@@ -43,7 +43,7 @@ func New(r io.Reader) (clientMessage, error) {
 	var msg clientMessage
 
 	// find out which message we receive
-	err := binary.Read(r, ByteOrder, &t)
+	err := binary.Read(r, byteOrder, &t)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +53,8 @@ func New(r io.Reader) (clientMessage, error) {
 		msg = new(Plate)
 	case MsgTypeWantHeartbeat:
 		msg = new(WantHeartbeat)
+	case MsgTypeIAmCamera:
+		msg = new(iAmCamera)
 	default:
 		return nil, errors.New("unknown message received")
 	}
@@ -73,7 +75,7 @@ func writeString(w stringWriter, s string) error {
 
 	l := uint8(len(s))
 
-	if err := binary.Write(w, ByteOrder, &l); err != nil {
+	if err := binary.Write(w, byteOrder, &l); err != nil {
 		return err
 	}
 
@@ -86,12 +88,12 @@ func writeString(w stringWriter, s string) error {
 // readString will read a length prefixed string from r
 func readString(r io.Reader) (string, error) {
 	var l uint8
-	if err := binary.Read(r, ByteOrder, &l); err != nil {
+	if err := binary.Read(r, byteOrder, &l); err != nil {
 		return "", err
 	}
 
 	buf := make([]byte, l)
-	if err := binary.Read(r, ByteOrder, &buf); err != nil {
+	if err := binary.Read(r, byteOrder, &buf); err != nil {
 		return "", err
 	}
 
@@ -101,7 +103,7 @@ func readString(r io.Reader) (string, error) {
 // readTime will read the timestamp from r
 func readTime(r io.Reader) (time.Time, error) {
 	var ts uint32
-	if err := binary.Read(r, ByteOrder, &ts); err != nil {
+	if err := binary.Read(r, byteOrder, &ts); err != nil {
 		return time.Unix(-1, 0).UTC(), err
 	}
 

@@ -8,23 +8,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPlateMsg(t *testing.T) {
+func TestIAmCamera(t *testing.T) {
 	cases := []struct {
 		Msg      []byte
-		Expected *Plate
+		Expected *iAmCamera
 	}{
 		{
-			Msg: []byte{0x20, 0x04, 0x55, 0x4e, 0x31, 0x58, 0x00, 0x00, 0x03, 0xe8},
-			Expected: &Plate{
-				Plate:     "UN1X",
-				Timestamp: toTime(1000),
+			Msg: []byte{0x80, 0x00, 0x42, 0x00, 0x64, 0x00, 0x3c},
+			Expected: &iAmCamera{
+				Road:  66,
+				Mile:  100,
+				Limit: 60,
 			},
 		},
 		{
-			Msg: []byte{0x20, 0x07, 0x52, 0x45, 0x30, 0x35, 0x42, 0x4b, 0x47, 0x00, 0x01, 0xe2, 0x40},
-			Expected: &Plate{
-				Plate:     "RE05BKG",
-				Timestamp: toTime(123456),
+			Msg: []byte{0x80, 0x01, 0x70, 0x04, 0xd2, 0x00, 0x28},
+			Expected: &iAmCamera{
+				Road:  368,
+				Mile:  1234,
+				Limit: 40,
 			},
 		},
 	}
