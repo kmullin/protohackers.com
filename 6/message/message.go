@@ -13,7 +13,7 @@ var ByteOrder = binary.BigEndian
 var ErrLargeMsg = errors.New("msg is too large")
 
 // MaxMsgLen is the maximum decimal value of a uint8
-const MaxMsgLen = int(^uint8(0))
+const MaxMsgLen = int(^uint8(0)) // 255
 
 const (
 	MsgTypeError         = uint8(0x10)
