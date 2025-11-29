@@ -2,13 +2,13 @@ package message
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorMsg(t *testing.T) {
-
 	cases := []struct {
 		Msg      string
 		Expected []byte
@@ -26,4 +26,20 @@ func TestErrorMsg(t *testing.T) {
 			assert.Equal(t, tc.Expected, b)
 		})
 	}
+}
+
+func TestMsgLength(t *testing.T) {
+	e := Error{RandStringRunes(256)}
+	_, err := e.MarshalBinary()
+	assert.Error(t, err)
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding"
 	"encoding/binary"
+	"errors"
 )
 
 var ByteOrder = binary.BigEndian
@@ -16,8 +17,17 @@ type Error struct {
 	Msg string
 }
 
+var ErrLargeMsg = errors.New("msg is too large")
+
+// MaxMsgLen is the maximum decimal value of a uint8
+const MaxMsgLen = int(^uint8(0))
+
 func (e Error) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
+
+	if len(e.Msg) > MaxMsgLen {
+		return nil, ErrLargeMsg
+	}
 
 	msg := struct {
 		Type   uint8
