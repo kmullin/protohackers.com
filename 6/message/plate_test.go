@@ -34,8 +34,6 @@ func TestPlateMsg(t *testing.T) {
 			r := bytes.NewReader(tc.Msg)
 			msg, err := New(r)
 			assert.Nil(t, err)
-
-			t.Logf("%+v", msg)
 			assert.Equal(t, msg, tc.Expected)
 		})
 	}

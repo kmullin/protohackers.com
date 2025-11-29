@@ -40,6 +40,7 @@ type stringWriter interface {
 
 func New(r io.Reader) (clientMessage, error) {
 	var t uint8
+	var msg clientMessage
 
 	// find out which message we receive
 	err := binary.Read(r, ByteOrder, &t)
@@ -49,21 +50,20 @@ func New(r io.Reader) (clientMessage, error) {
 
 	switch t {
 	case MsgTypePlate: // Plate
-		var p Plate
-
-		b, err := io.ReadAll(r)
-		if err != nil {
-			return nil, err
-		}
-
-		err = p.UnmarshalBinary(b)
-		return &p, err
+		msg = new(Plate)
 	case MsgTypeWantHeartbeat:
+		msg = new(WantHeartbeat)
 	default:
 		return nil, errors.New("unknown message received")
 	}
 
-	return nil, nil
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	err = msg.UnmarshalBinary(b)
+	return msg, err
 }
 
 func writeString(w stringWriter, s string) error {
@@ -111,4 +111,9 @@ func readTime(r io.Reader) (time.Time, error) {
 // toTime takes the timestamps from the raw input type and converts it into time.Time
 func toTime(t uint32) time.Time {
 	return time.Unix(int64(t), 0).UTC()
+}
+
+// fromDeci converts Decisecond interval into a usable time.Duration
+func fromDeci(t uint32) time.Duration {
+	return time.Duration(t) * time.Second / 10
 }
