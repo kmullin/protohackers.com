@@ -32,3 +32,11 @@ func TestWantHeartbeat(t *testing.T) {
 		})
 	}
 }
+
+func TestHeartbeat(t *testing.T) {
+	var hb Heartbeat
+
+	b, err := hb.MarshalBinary()
+	assert.Nil(t, err)
+	assert.Equal(t, []byte{MsgTypeHeartbeat}, b)
+}
