@@ -1,3 +1,4 @@
+// Budget Chat
 package main
 
 import (
