@@ -38,8 +38,8 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		}
 		s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("disconnected")
 	}()
-	s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("connected")
 
+	// TODO: set a deadline for the connection and keep updating it after successful io
 	ss := new(Session)
 	ss.Conn = conn
 
@@ -47,7 +47,6 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	if err != nil {
 		s.logger.Err(err).Msg("parsing message")
 	}
-	s.logger.Debug().Interface("msg", msg)
 
 	switch v := msg.(type) {
 	case *message.IAmCamera:

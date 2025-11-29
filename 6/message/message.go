@@ -49,7 +49,7 @@ func New(r io.Reader) (clientMessage, error) {
 	}
 
 	switch t {
-	case MsgTypePlate: // Plate
+	case MsgTypePlate:
 		msg = new(Plate)
 	case MsgTypeWantHeartbeat:
 		msg = new(WantHeartbeat)
@@ -61,6 +61,7 @@ func New(r io.Reader) (clientMessage, error) {
 		return nil, errors.New("unknown message received")
 	}
 
+	// XXX: we arent reading till an EOF, clients send single messages and may go dark
 	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
