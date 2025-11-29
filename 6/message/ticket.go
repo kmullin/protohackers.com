@@ -19,8 +19,7 @@ type Ticket struct {
 func (t Ticket) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
-	tt := uint8(0x21)
-	if err := binary.Write(&buf, ByteOrder, &tt); err != nil {
+	if err := binary.Write(&buf, ByteOrder, MsgTypeTicket); err != nil {
 		return nil, err
 	}
 

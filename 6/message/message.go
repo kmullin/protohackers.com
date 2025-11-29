@@ -15,6 +15,16 @@ var ErrLargeMsg = errors.New("msg is too large")
 // MaxMsgLen is the maximum decimal value of a uint8
 const MaxMsgLen = int(^uint8(0))
 
+const (
+	MsgTypeError         = uint8(0x10)
+	MsgTypePlate         = uint8(0x20)
+	MsgTypeTicket        = uint8(0x21)
+	MsgTypeWantHeartbeat = uint8(0x40)
+	MsgTypeHeartbeat     = uint8(0x41)
+	MsgTypeIAmCamera     = uint8(0x80)
+	MsgTypeIAmDispatcher = uint8(0x81)
+)
+
 type serverMessage interface {
 	encoding.BinaryMarshaler
 }
@@ -38,7 +48,7 @@ func New(r io.Reader) (clientMessage, error) {
 	}
 
 	switch t {
-	case 0x20: // Plate
+	case MsgTypePlate: // Plate
 		var p Plate
 
 		b, err := io.ReadAll(r)
@@ -48,7 +58,7 @@ func New(r io.Reader) (clientMessage, error) {
 
 		err = p.UnmarshalBinary(b)
 		return &p, err
-	case 0x40:
+	case MsgTypeWantHeartbeat:
 	default:
 		return nil, errors.New("unknown message received")
 	}
@@ -57,6 +67,10 @@ func New(r io.Reader) (clientMessage, error) {
 }
 
 func writeString(w stringWriter, s string) error {
+	if len(s) > MaxMsgLen {
+		return ErrLargeMsg
+	}
+
 	l := uint8(len(s))
 
 	if err := binary.Write(w, ByteOrder, &l); err != nil {
