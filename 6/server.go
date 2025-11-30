@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net"
 
 	"github.com/kmullin/protohackers.com/6/message"
@@ -43,17 +44,21 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	ss := new(Session)
 	ss.Conn = conn
 
-	msg, err := message.New(ss.Conn)
-	if err != nil {
-		s.logger.Err(err).Msg("parsing message")
-	}
+	s.logger.Info().Stringer("remote", conn.RemoteAddr()).Msg("connected")
+	for {
+		msg, err := message.New(ss.Conn)
+		if err != nil {
+			if err == io.EOF {
+				return
+			}
+			s.logger.Err(err).Msg("parsing message")
+		}
 
-	switch v := msg.(type) {
-	case *message.IAmCamera:
-		s.logger.Info().Interface("camera", v).Stringer("remote", conn.RemoteAddr()).Msg("connected")
-	case *message.IAmDispatcher:
-		s.logger.Info().Interface("dispatcher", v).Stringer("remote", conn.RemoteAddr()).Msg("connected")
-	default:
-		s.logger.Debug().Interface("type", v).Msg("unknown message")
+		switch v := msg.(type) {
+		case *message.IAmCamera:
+			s.logger.Info().Interface("camera", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+		case *message.IAmDispatcher:
+			s.logger.Info().Interface("dispatcher", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+		}
 	}
 }
