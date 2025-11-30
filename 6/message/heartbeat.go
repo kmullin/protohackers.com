@@ -1,8 +1,8 @@
 package message
 
 import (
-	"bytes"
 	"encoding/binary"
+	"io"
 	"time"
 )
 
@@ -10,18 +10,14 @@ type WantHeartbeat struct {
 	Interval time.Duration
 }
 
-func (hb *WantHeartbeat) UnmarshalBinary(data []byte) error {
+func readWantHeartbeatMsg(r io.Reader) (*WantHeartbeat, error) {
 	var i uint32
 
-	r := bytes.NewReader(data)
-
 	if err := binary.Read(r, byteOrder, &i); err != nil {
-		return err
+		return nil, err
 	}
 
-	hb.Interval = fromDeci(i)
-
-	return nil
+	return &WantHeartbeat{fromDeci(i)}, nil
 }
 
 type Heartbeat struct{}

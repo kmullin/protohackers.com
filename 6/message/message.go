@@ -1,7 +1,6 @@
 package message
 
 import (
-	"encoding"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -25,22 +24,15 @@ const (
 	MsgTypeIAmDispatcher = uint8(0x81)
 )
 
-type serverMessage interface {
-	encoding.BinaryMarshaler
-}
-
-type clientMessage interface {
-	encoding.BinaryUnmarshaler
-}
+type Message any
 
 type stringWriter interface {
 	io.StringWriter
 	io.Writer
 }
 
-func New(r io.Reader) (clientMessage, error) {
+func New(r io.Reader) (Message, error) {
 	var t uint8
-	var msg clientMessage
 
 	// find out which message we receive
 	err := binary.Read(r, byteOrder, &t)
@@ -50,25 +42,16 @@ func New(r io.Reader) (clientMessage, error) {
 
 	switch t {
 	case MsgTypePlate:
-		msg = new(Plate)
+		return readPlateMsg(r)
 	case MsgTypeWantHeartbeat:
-		msg = new(WantHeartbeat)
+		return readWantHeartbeatMsg(r)
 	case MsgTypeIAmCamera:
-		msg = new(IAmCamera)
+		return readIAmCameraMsg(r)
 	case MsgTypeIAmDispatcher:
-		msg = new(IAmDispatcher)
+		return readIAmDispatcherMsg(r)
 	default:
 		return nil, errors.New("unknown message received")
 	}
-
-	// XXX: we arent reading till an EOF, clients send single messages and may go dark
-	b, err := io.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	err = msg.UnmarshalBinary(b)
-	return msg, err
 }
 
 func writeString(w stringWriter, s string) error {

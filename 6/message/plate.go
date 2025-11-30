@@ -1,7 +1,7 @@
 package message
 
 import (
-	"bytes"
+	"io"
 	"time"
 )
 
@@ -10,20 +10,19 @@ type Plate struct {
 	Timestamp time.Time
 }
 
-func (p *Plate) UnmarshalBinary(data []byte) error {
+func readPlateMsg(r io.Reader) (*Plate, error) {
 	var err error
-
-	r := bytes.NewReader(data)
+	var p Plate
 
 	p.Plate, err = readString(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	p.Timestamp, err = readTime(r)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &p, nil
 }

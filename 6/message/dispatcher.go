@@ -1,30 +1,29 @@
 package message
 
 import (
-	"bytes"
 	"encoding/binary"
+	"io"
 )
 
 type IAmDispatcher struct {
 	Roads []int
 }
 
-func (iad *IAmDispatcher) UnmarshalBinary(data []byte) error {
-	r := bytes.NewReader(data)
-
+func readIAmDispatcherMsg(r io.Reader) (*IAmDispatcher, error) {
 	var numRoads uint8
 
 	if err := binary.Read(r, byteOrder, &numRoads); err != nil {
-		return err
+		return nil, err
 	}
 
 	var road uint16
+	var roads []int
 	for i := 0; i < int(numRoads); i++ {
 		if err := binary.Read(r, byteOrder, &road); err != nil {
-			return err
+			return nil, err
 		}
 
-		iad.Roads = append(iad.Roads, int(road))
+		roads = append(roads, int(road))
 	}
-	return nil
+	return &IAmDispatcher{roads}, nil
 }
