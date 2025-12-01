@@ -13,13 +13,16 @@ type Server struct {
 	//observations []observation
 	//mu     *sync.RWMutex
 	logger zerolog.Logger
+	t      *Ticketer
 }
 
 type Session struct {
 	net.Conn
 
 	logger zerolog.Logger // for session context aware logger
-	Type   uint8          // to record what type of session this is, after identifying Camera or Dispatcher
+
+	camera     *message.IAmCamera     // to record camera information
+	dispatcher *message.IAmDispatcher // to record dispatcher information
 
 	heartbeating bool      // if we have a heartbeat running
 	doneC        chan bool // used to signal disconnect and to stop any heartbeating
@@ -29,7 +32,6 @@ func (s *Server) HandleTCP(conn net.Conn) {
 	// TODO: set a deadline for the connection and keep updating it after successful io
 	ss := &Session{
 		Conn:   conn,
-		Type:   0,
 		logger: s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
 		doneC:  make(chan bool, 1),
 	}
@@ -57,42 +59,43 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		switch v := msg.(type) {
 		case *message.IAmCamera:
 			// It is an error for a client that has already identified itself as either a camera or a ticket dispatcher to send an IAmCamera message.
-			switch ss.Type {
-			case 0:
-				ss.Type = message.MsgTypeIAmCamera
-				ss.logger = ss.logger.With().Interface("camera", v).Logger()
-			case message.MsgTypeIAmDispatcher:
-				ss.Error("camera session tried to change to dispatcher")
+			switch {
+			case ss.dispatcher != nil:
+				ss.Error("dispatcher session tried to change to camera")
 				return
-			case message.MsgTypeIAmCamera:
+			case ss.camera != nil:
 				ss.Error("camera session sent duplicate IAmCamera msg")
 				return
+			case ss.camera == nil:
+				ss.camera = v
+				ss.logger = ss.logger.With().Interface("camera", v).Logger()
 			}
 
 			ss.logger.Info().Msg("new camera")
 		case *message.IAmDispatcher:
 			// It is an error for a client that has already identified itself as either a camera or a ticket dispatcher to send an IAmDispatcher message.
-			switch ss.Type {
-			case 0:
-				ss.Type = message.MsgTypeIAmDispatcher
-				ss.logger = ss.logger.With().Interface("dispatcher", v).Logger()
-			case message.MsgTypeIAmCamera:
-				ss.Error("dispatcher session tried to change to camera")
+			switch {
+			case ss.camera != nil:
+				ss.Error("camera session tried to change to dispatcher")
 				return
-			case message.MsgTypeIAmDispatcher:
+			case ss.dispatcher != nil:
 				ss.Error("dispatcher session sent duplicate IAmDispatcher msg")
 				return
+			case ss.dispatcher == nil:
+				ss.dispatcher = v
+				ss.logger = ss.logger.With().Interface("dispatcher", v).Logger()
 			}
 
 			ss.logger.Info().Msg("new dispatcher")
 		case *message.Plate:
 			// It is an error for a client that has not identified itself as a camera to send a Plate message.
-			if ss.Type != message.MsgTypeIAmCamera {
+			if ss.camera == nil {
 				ss.Error("not a camera invalid plate msg")
 				return
 			}
 
 			ss.logger.Info().Interface("plate", v).Msg("received plate from camera")
+			s.t.Observe(v, ss.camera)
 		case *message.WantHeartbeat:
 			// It is an error for a client to send multiple WantHeartbeat messages on a single connection.
 			if ss.heartbeating {
@@ -115,7 +118,7 @@ func (ss *Session) Error(msg string) {
 
 	e := &message.Error{Msg: msg}
 	if _, err := e.WriteTo(ss); err != nil {
-		ss.logger.Err(err)
+		ss.logger.Err(err).Msg("writing error")
 	}
 }
 
@@ -141,7 +144,7 @@ func (ss *Session) StartHeartbeat(d time.Duration) {
 				ss.logger.Info().Msg("sending heartbeat")
 
 				if _, err := hb.WriteTo(ss); err != nil {
-					ss.logger.Err(err)
+					ss.logger.Err(err).Msg("writing heartbeat")
 				}
 			}
 		}

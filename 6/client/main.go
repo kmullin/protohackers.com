@@ -33,6 +33,11 @@ func main() {
 		log.Error().Err(err).Msg("write failed")
 	}
 
+	// 	msg = &message.IAmDispatcher{Roads: []uint16{123}}
+	// 	if _, err := msg.WriteTo(conn); err != nil {
+	// 		log.Error().Err(err).Msg("write failed")
+	// 	}
+
 	time.Sleep(3 * time.Second)
 
 	// client 2

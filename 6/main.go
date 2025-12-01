@@ -19,6 +19,6 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	s := &Server{logger: log.Logger}
+	s := &Server{logger: log.Logger, t: NewTicketer()}
 	server.TCP(s)
 }
