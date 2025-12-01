@@ -1,29 +1,46 @@
 package message
 
 import (
+	"bytes"
 	"encoding/binary"
 	"io"
 )
 
 type IAmDispatcher struct {
-	Roads []int
+	Roads []uint16
+}
+
+func (iad *IAmDispatcher) MarshalBinary() ([]byte, error) {
+	var buf bytes.Buffer
+
+	if err := binary.Write(&buf, byteOrder, MsgTypeIAmDispatcher); err != nil {
+		return nil, err
+	}
+
+	if err := binary.Write(&buf, byteOrder, uint8(len(iad.Roads))); err != nil {
+		return nil, err
+	}
+
+	if err := binary.Write(&buf, byteOrder, iad.Roads); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (iad *IAmDispatcher) WriteTo(w io.Writer) (int64, error) {
+	return writeTo(w, iad)
 }
 
 func readIAmDispatcherMsg(r io.Reader) (*IAmDispatcher, error) {
 	var numRoads uint8
-
 	if err := binary.Read(r, byteOrder, &numRoads); err != nil {
 		return nil, err
 	}
 
-	var road uint16
-	var roads []int
-	for i := 0; i < int(numRoads); i++ {
-		if err := binary.Read(r, byteOrder, &road); err != nil {
-			return nil, err
-		}
-
-		roads = append(roads, int(road))
+	var iad IAmDispatcher
+	iad.Roads = make([]uint16, numRoads)
+	if err := binary.Read(r, byteOrder, &iad.Roads); err != nil {
+		return nil, err
 	}
-	return &IAmDispatcher{roads}, nil
+	return &iad, nil
 }

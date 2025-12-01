@@ -1,6 +1,7 @@
 package message
 
 import (
+	"encoding"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -86,6 +87,25 @@ func readString(r io.Reader) (string, error) {
 	return string(buf), nil
 }
 
+// writeTo is a generic helper for client messages
+func writeTo(w io.Writer, msg encoding.BinaryMarshaler) (int64, error) {
+	b, err := msg.MarshalBinary()
+	if err != nil {
+		return 0, err
+	}
+
+	if err := binary.Write(w, byteOrder, b); err != nil {
+		return 0, err
+	}
+
+	return int64(binary.Size(b)), nil
+}
+
+// writeTime will write to w the binary representation of the given time
+func writeTime(w io.Writer, t time.Time) error {
+	return binary.Write(w, byteOrder, uint32(t.Unix()))
+}
+
 // readTime will read the timestamp from r
 func readTime(r io.Reader) (time.Time, error) {
 	var ts uint32
@@ -104,4 +124,9 @@ func toTime(t uint32) time.Time {
 // fromDeci converts Decisecond interval into a usable time.Duration
 func fromDeci(t uint32) time.Duration {
 	return time.Duration(t) * time.Second / 10
+}
+
+// toDeci returns deciseconds for a given duration
+func toDeci(d time.Duration) uint32 {
+	return uint32(d / (time.Second / 10))
 }

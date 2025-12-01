@@ -59,6 +59,12 @@ func (s *Server) HandleTCP(conn net.Conn) {
 			s.logger.Info().Interface("camera", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
 		case *message.IAmDispatcher:
 			s.logger.Info().Interface("dispatcher", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+		case *message.Plate:
+			s.logger.Info().Interface("plate", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+		case *message.WantHeartbeat:
+			s.logger.Info().Interface("want heartbeat", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+		default:
+			s.logger.Debug().Msg("unknown message")
 		}
 	}
 }
