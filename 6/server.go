@@ -25,24 +25,13 @@ type Session struct {
 	doneC        chan bool // used to signal disconnect and to stop any heartbeating
 }
 
-//	type Camera struct {
-//		Road       string
-//		Location   string
-//		SpeedLimit string
-//	}
-//
-//	type Picture struct {
-//		Plate     string
-//		Timestamp time.Time
-//	}
-
 func (s *Server) HandleTCP(conn net.Conn) {
 	// TODO: set a deadline for the connection and keep updating it after successful io
 	ss := &Session{
 		Conn:   conn,
 		Type:   0,
 		logger: s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
-		doneC:  make(chan bool),
+		doneC:  make(chan bool, 1),
 	}
 
 	// tear down client connection after disconnect
@@ -56,6 +45,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 
 	ss.logger.Info().Msg("connected")
 	for {
+		// conn.SetDeadline(time.Now().Add(5 * time.Second))
 		msg, err := message.New(ss.Conn)
 		if err != nil {
 			if err == io.EOF {
@@ -130,6 +120,7 @@ func (ss *Session) Error(msg string) {
 	}
 }
 
+// StartHeartbeat starts sending a heartbeat message to the client at every interval d
 func (ss *Session) StartHeartbeat(d time.Duration) {
 	ss.heartbeating = true
 	if d == 0 {
