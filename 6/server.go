@@ -10,8 +10,6 @@ import (
 )
 
 type Server struct {
-	//observations []observation
-	//mu     *sync.RWMutex
 	logger zerolog.Logger
 	t      *Ticketer
 }
