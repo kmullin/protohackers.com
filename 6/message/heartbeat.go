@@ -44,3 +44,7 @@ type Heartbeat struct{}
 func (hb *Heartbeat) MarshalBinary() ([]byte, error) {
 	return []byte{MsgTypeHeartbeat}, nil
 }
+
+func (hb *Heartbeat) WriteTo(w io.Writer) (int64, error) {
+	return writeTo(w, hb)
+}

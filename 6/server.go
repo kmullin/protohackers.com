@@ -18,9 +18,11 @@ type Server struct {
 type Session struct {
 	net.Conn
 
-	Type         uint8          // to record what type of session this is, after identifying Camera or Dispatcher
-	logger       zerolog.Logger // for session context aware logger
-	heartbeating bool           // if we have a heartbeat running
+	logger zerolog.Logger // for session context aware logger
+	Type   uint8          // to record what type of session this is, after identifying Camera or Dispatcher
+
+	heartbeating bool      // if we have a heartbeat running
+	doneC        chan bool // used to signal disconnect and to stop any heartbeating
 }
 
 //	type Camera struct {
@@ -40,10 +42,12 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		Conn:   conn,
 		Type:   0,
 		logger: s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
+		doneC:  make(chan bool),
 	}
 
 	// tear down client connection after disconnect
 	defer func() {
+		ss.doneC <- true
 		if err := conn.Close(); err != nil {
 			ss.logger.Err(err).Msg("disconnect")
 		}
@@ -58,6 +62,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 				return
 			}
 			ss.logger.Err(err).Msg("parsing message")
+			return
 		}
 
 		switch v := msg.(type) {
@@ -127,6 +132,28 @@ func (ss *Session) Error(msg string) {
 
 func (ss *Session) StartHeartbeat(d time.Duration) {
 	ss.heartbeating = true
+	if d == 0 {
+		return
+	}
 	ss.logger.Info().Dur("interval", d).Msg("starting heartbeat")
-	// TODO: implement a heartbeat
+
+	ticker := time.NewTicker(d)
+	go func() {
+		defer ticker.Stop()
+
+		hb := &message.Heartbeat{}
+		for {
+			select {
+			case <-ss.doneC:
+				ss.logger.Info().Msg("stopping heartbeat")
+				return
+			case <-ticker.C:
+				ss.logger.Info().Msg("sending heartbeat")
+
+				if _, err := hb.WriteTo(ss); err != nil {
+					ss.logger.Err(err)
+				}
+			}
+		}
+	}()
 }
