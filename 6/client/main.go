@@ -28,13 +28,6 @@ func main() {
 		log.Error().Err(err).Msg("write failed")
 	}
 
-	msg = &message.WantHeartbeat{Interval: 2500 * time.Millisecond}
-	if _, err := msg.WriteTo(conn); err != nil {
-		log.Error().Err(err).Msg("write failed")
-	}
-
-	time.Sleep(5 * time.Second)
-
 	// client 2
 	conn = MustDial()
 

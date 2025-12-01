@@ -80,7 +80,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 				return
 			}
 
-			ss.logger.Info().Msg("received message")
+			ss.logger.Info().Msg("new camera")
 		case *message.IAmDispatcher:
 			// It is an error for a client that has already identified itself as either a camera or a ticket dispatcher to send an IAmDispatcher message.
 			switch ss.Type {
@@ -95,7 +95,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 				return
 			}
 
-			ss.logger.Info().Msg("received message")
+			ss.logger.Info().Msg("new dispatcher")
 		case *message.Plate:
 			// It is an error for a client that has not identified itself as a camera to send a Plate message.
 			if ss.Type != message.MsgTypeIAmCamera {
@@ -103,7 +103,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 				return
 			}
 
-			ss.logger.Info().Interface("plate", v).Msg("received message")
+			ss.logger.Info().Interface("plate", v).Msg("received plate from camera")
 		case *message.WantHeartbeat:
 			// It is an error for a client to send multiple WantHeartbeat messages on a single connection.
 			if ss.heartbeating {
