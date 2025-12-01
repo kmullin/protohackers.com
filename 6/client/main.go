@@ -39,9 +39,16 @@ func main() {
 		log.Error().Err(err).Msg("write failed")
 	}
 
-	msg = &message.WantHeartbeat{60 * time.Second}
+	msg = &message.WantHeartbeat{1 * time.Second}
 	_, err = msg.WriteTo(conn)
 	if err != nil {
 		log.Error().Err(err).Msg("write failed")
 	}
+
+	n, err := io.Copy(os.Stderr, conn)
+	if err != nil {
+		log.Error().Err(err).Msg("read failed")
+	}
+
+	log.Debug().Int64("inside", n)
 }

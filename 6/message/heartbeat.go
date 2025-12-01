@@ -41,6 +41,6 @@ func readWantHeartbeatMsg(r io.Reader) (*WantHeartbeat, error) {
 
 type Heartbeat struct{}
 
-func (hb Heartbeat) MarshalBinary() ([]byte, error) {
+func (hb *Heartbeat) MarshalBinary() ([]byte, error) {
 	return []byte{MsgTypeHeartbeat}, nil
 }

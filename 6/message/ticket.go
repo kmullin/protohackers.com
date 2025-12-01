@@ -16,7 +16,7 @@ type Ticket struct {
 	Speed      int
 }
 
-func (t Ticket) MarshalBinary() ([]byte, error) {
+func (t *Ticket) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	if err := binary.Write(&buf, byteOrder, MsgTypeTicket); err != nil {

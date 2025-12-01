@@ -12,6 +12,11 @@ type Plate struct {
 	Timestamp time.Time
 }
 
+// func (p *Plate) MarshalZerologObject(e *zerolog.Event) {
+// 	e.Str("plate", p.Plate).
+// 		Time("timestamp", p.Timestamp)
+// }
+
 func (p *Plate) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 

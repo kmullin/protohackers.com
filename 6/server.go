@@ -17,7 +17,9 @@ type Server struct {
 type Session struct {
 	net.Conn
 
-	Type int // the session Type
+	Type uint8
+
+	logger zerolog.Logger
 }
 
 //	type Camera struct {
@@ -32,39 +34,70 @@ type Session struct {
 //	}
 
 func (s *Server) HandleTCP(conn net.Conn) {
+	// TODO: set a deadline for the connection and keep updating it after successful io
+	ss := &Session{
+		Conn:   conn,
+		Type:   0,
+		logger: s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
+	}
+
 	// tear down client connection after disconnect
 	defer func() {
 		if err := conn.Close(); err != nil {
-			s.logger.Err(err).Stringer("client", conn.RemoteAddr()).Msg("disconnect")
+			ss.logger.Err(err).Msg("disconnect")
 		}
-		s.logger.Info().Stringer("client", conn.RemoteAddr()).Msg("disconnected")
+		ss.logger.Info().Msg("disconnected")
 	}()
 
-	// TODO: set a deadline for the connection and keep updating it after successful io
-	ss := new(Session)
-	ss.Conn = conn
-
-	s.logger.Info().Stringer("remote", conn.RemoteAddr()).Msg("connected")
+	ss.logger.Info().Msg("connected")
 	for {
 		msg, err := message.New(ss.Conn)
 		if err != nil {
 			if err == io.EOF {
 				return
 			}
-			s.logger.Err(err).Msg("parsing message")
+			ss.logger.Err(err).Msg("parsing message")
 		}
 
 		switch v := msg.(type) {
 		case *message.IAmCamera:
-			s.logger.Info().Interface("camera", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+			switch ss.Type {
+			case 0:
+				ss.Type = message.MsgTypeIAmCamera
+				ss.logger = ss.logger.With().Interface("camera", v).Logger()
+			case message.MsgTypeIAmDispatcher:
+				ss.Error("camera session tried to change to dispatcher")
+				return
+			}
+
+			ss.logger.Info().Msg("received message")
 		case *message.IAmDispatcher:
-			s.logger.Info().Interface("dispatcher", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+			switch ss.Type {
+			case 0:
+				ss.Type = message.MsgTypeIAmDispatcher
+				ss.logger = ss.logger.With().Interface("dispatcher", v).Logger()
+			case message.MsgTypeIAmCamera:
+				ss.Error("dispatcher session tried to change to camera")
+				return
+			}
+
+			ss.logger.Info().Msg("received message")
 		case *message.Plate:
-			s.logger.Info().Interface("plate", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+			ss.logger.Info().Interface("plate", v).Msg("received message")
 		case *message.WantHeartbeat:
-			s.logger.Info().Interface("want heartbeat", v).Stringer("remote", conn.RemoteAddr()).Msg("received message")
+			ss.logger.Info().Dur("want heartbeat", v.Interval).Msg("received message")
 		default:
-			s.logger.Debug().Msg("unknown message")
+			ss.logger.Error().Msg("unknown message")
 		}
+	}
+}
+
+// Error logs any errors and sends the client the same error message
+func (ss *Session) Error(msg string) {
+	ss.logger.Error().Msg(msg)
+
+	e := &message.Error{Msg: msg}
+	if _, err := e.WriteTo(ss); err != nil {
+		ss.logger.Err(err)
 	}
 }

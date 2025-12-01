@@ -3,13 +3,14 @@ package message
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 )
 
 type Error struct {
 	Msg string
 }
 
-func (e Error) MarshalBinary() ([]byte, error) {
+func (e *Error) MarshalBinary() ([]byte, error) {
 	var buf bytes.Buffer
 
 	if err := binary.Write(&buf, byteOrder, MsgTypeError); err != nil {
@@ -21,4 +22,8 @@ func (e Error) MarshalBinary() ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (e *Error) WriteTo(w io.Writer) (int64, error) {
+	return writeTo(w, e)
 }
