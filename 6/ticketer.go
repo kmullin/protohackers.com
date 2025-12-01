@@ -99,6 +99,8 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 					Float64("distance", distance).
 					Float64("duration", duration).
 					Str("plate", plate).
+					Uint16("road", road).
+					Uint16("limit", a.Limit).
 					Msg("getSpeed")
 
 			}
