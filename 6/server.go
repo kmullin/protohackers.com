@@ -85,6 +85,7 @@ func (s *Server) HandleTCP(conn net.Conn) {
 			}
 
 			ss.logger.Info().Msg("new dispatcher")
+			_ = s.t.Check(v.Roads)
 		case *message.Plate:
 			// It is an error for a client that has not identified itself as a camera to send a Plate message.
 			if ss.camera == nil {
