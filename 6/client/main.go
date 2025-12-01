@@ -19,6 +19,8 @@ func main() {
 		log.Fatal().Err(err).Msg("Dial failed")
 	}
 
+	conn.SetDeadline(time.Now().Add(3 * time.Second))
+
 	var msg io.WriterTo
 
 	msg = &message.IAmCamera{Road: 123, Mile: 456, Limit: 100}
@@ -27,11 +29,11 @@ func main() {
 		log.Error().Err(err).Msg("write failed")
 	}
 
-	msg = &message.IAmDispatcher{Roads: []uint16{66}}
-	_, err = msg.WriteTo(conn)
-	if err != nil {
-		log.Error().Err(err).Msg("write failed")
-	}
+	// msg = &message.IAmDispatcher{Roads: []uint16{66}}
+	// _, err = msg.WriteTo(conn)
+	// if err != nil {
+	// 	log.Error().Err(err).Msg("write failed")
+	// }
 
 	msg = &message.Plate{Plate: "thing", Timestamp: time.Now().UTC()}
 	_, err = msg.WriteTo(conn)
