@@ -48,10 +48,9 @@ func (s *Server) HandleTCP(conn net.Conn) {
 		// conn.SetDeadline(time.Now().Add(5 * time.Second))
 		msg, err := message.New(ss.Conn)
 		if err != nil {
-			if err == io.EOF {
-				return
+			if err != io.EOF {
+				ss.logger.Err(err).Msg("parsing message")
 			}
-			ss.logger.Err(err).Msg("parsing message")
 			return
 		}
 
