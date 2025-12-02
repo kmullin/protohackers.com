@@ -9,12 +9,12 @@ import (
 
 type Ticket struct {
 	Plate      string
-	Road       int
-	Mile1      int
+	Road       uint16
+	Mile1      uint16
 	Timestamp1 time.Time
-	Mile2      int
+	Mile2      uint16
 	Timestamp2 time.Time
-	Speed      int
+	Speed      uint16
 }
 
 func (t *Ticket) MarshalBinary() ([]byte, error) {
@@ -36,12 +36,12 @@ func (t *Ticket) MarshalBinary() ([]byte, error) {
 		Timestamp2 uint32
 		Speed      uint16
 	}{
-		uint16(t.Road),
-		uint16(t.Mile1),
+		t.Road,
+		t.Mile1,
 		uint32(t.Timestamp1.Unix()),
-		uint16(t.Mile2),
+		t.Mile2,
 		uint32(t.Timestamp2.Unix()),
-		uint16(t.Speed * 100), // the inferred average speed of the car multiplied by 100
+		t.Speed * 100, // the inferred average speed of the car multiplied by 100
 	}
 
 	if err := binary.Write(&buf, byteOrder, &msg); err != nil {

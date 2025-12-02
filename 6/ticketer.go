@@ -92,12 +92,12 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 
 				distance := math.Abs(float64(a.Mile) - float64(b.Mile))
 				duration := b.Timestamp.Sub(a.Timestamp).Hours()
-				speed := uint16(distance / duration)
+				speed := distance / duration
 
 				log.Info().
 					Interface("a", a).
 					Interface("b", b).
-					Uint16("speed", speed).
+					Float64("speed", speed).
 					Float64("distance", distance).
 					Float64("duration", duration).
 					Str("plate", plate).
@@ -105,15 +105,16 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 					Uint16("limit", a.Limit).
 					Msg("getSpeed")
 
-				if speed > a.Limit {
+				// always required to ticket a car that is exceeding the speed limit by 0.5 mph or more
+				if speed >= (float64(a.Limit) + 0.5) {
 					ticket = message.Ticket{
 						Plate:      plate,
-						Road:       int(road),
-						Mile1:      int(a.Mile),
+						Road:       road,
+						Mile1:      a.Mile,
 						Timestamp1: a.Timestamp,
-						Mile2:      int(b.Mile),
+						Mile2:      b.Mile,
 						Timestamp2: b.Timestamp,
-						Speed:      int(speed),
+						Speed:      uint16(speed),
 					}
 					log.Info().
 						Interface("ticket", ticket).
