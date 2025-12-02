@@ -3,6 +3,7 @@ package message
 import (
 	"bytes"
 	"encoding/binary"
+	"io"
 	"time"
 )
 
@@ -40,7 +41,7 @@ func (t *Ticket) MarshalBinary() ([]byte, error) {
 		uint32(t.Timestamp1.Unix()),
 		uint16(t.Mile2),
 		uint32(t.Timestamp2.Unix()),
-		uint16(t.Speed),
+		uint16(t.Speed * 100), // the inferred average speed of the car multiplied by 100
 	}
 
 	if err := binary.Write(&buf, byteOrder, &msg); err != nil {
@@ -48,4 +49,8 @@ func (t *Ticket) MarshalBinary() ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func (t *Ticket) WriteTo(w io.Writer) (int64, error) {
+	return writeTo(w, t)
 }

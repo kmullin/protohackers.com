@@ -78,6 +78,8 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
+	var ticket message.Ticket
+
 	for _, road := range roads {
 		for plate, observations := range t.t[road] {
 			if len(observations) < 2 {
@@ -90,7 +92,7 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 
 				distance := math.Abs(float64(a.Mile) - float64(b.Mile))
 				duration := b.Timestamp.Sub(a.Timestamp).Hours()
-				speed := uint16(distance / duration * 100)
+				speed := uint16(distance / duration)
 
 				log.Info().
 					Interface("a", a).
@@ -103,9 +105,23 @@ func (t *Ticketer) Check(roads []uint16) *message.Ticket {
 					Uint16("limit", a.Limit).
 					Msg("getSpeed")
 
+				if speed > a.Limit {
+					ticket = message.Ticket{
+						Plate:      plate,
+						Road:       int(road),
+						Mile1:      int(a.Mile),
+						Timestamp1: a.Timestamp,
+						Mile2:      int(b.Mile),
+						Timestamp2: b.Timestamp,
+						Speed:      int(speed),
+					}
+					log.Info().
+						Interface("ticket", ticket).
+						Msg("issuing ticket")
+				}
 			}
 		}
 	}
 
-	return nil
+	return &ticket
 }
