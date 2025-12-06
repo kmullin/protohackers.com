@@ -3,7 +3,6 @@ package main
 import (
 	"io"
 	"net"
-	"time"
 
 	"github.com/kmullin/protohackers.com/6/message"
 	"github.com/rs/zerolog"
@@ -14,29 +13,18 @@ type Server struct {
 	t      *Ticketer
 }
 
-type Session struct {
-	net.Conn
-
-	logger zerolog.Logger // for session context aware logger
-
-	camera     *message.IAmCamera     // to record camera information
-	dispatcher *message.IAmDispatcher // to record dispatcher information
-
-	heartbeating bool      // if we have a heartbeat running
-	doneC        chan bool // used to signal disconnect and to stop any heartbeating
-}
-
 func (s *Server) HandleTCP(conn net.Conn) {
 	// TODO: set a deadline for the connection and keep updating it after successful io
 	ss := &Session{
-		Conn:   conn,
-		logger: s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
-		doneC:  make(chan bool, 1),
+		Conn:    conn,
+		logger:  s.logger.With().Stringer("remote", conn.RemoteAddr()).Logger(),
+		ticketC: make(chan message.Ticket, 32),
+		hbDoneC: make(chan bool, 1),
 	}
 
 	// tear down client connection after disconnect
 	defer func() {
-		ss.doneC <- true
+		ss.hbDoneC <- true
 		if err := conn.Close(); err != nil {
 			ss.logger.Err(err).Msg("disconnect")
 		}
@@ -45,13 +33,26 @@ func (s *Server) HandleTCP(conn net.Conn) {
 
 	ss.logger.Info().Msg("connected")
 	for {
-		// conn.SetDeadline(time.Now().Add(5 * time.Second))
-		msg, err := message.New(ss.Conn)
-		if err != nil {
-			if err != io.EOF {
-				ss.logger.Err(err).Msg("parsing message")
+		var msg message.Message
+
+		select {
+		case ticket := <-ss.ticketC:
+			// dispatcher only
+			_, err := ticket.WriteTo(conn)
+			if err != nil {
+				ss.logger.Error().Err(err).Msg("failed to write ticket")
+				// XXX: return here?
 			}
-			return
+		default:
+			// conn.SetDeadline(time.Now().Add(5 * time.Second))
+			var err error
+			msg, err = message.New(ss.Conn)
+			if err != nil {
+				if err != io.EOF {
+					ss.logger.Err(err).Msg("parsing message")
+				}
+				return
+			}
 		}
 
 		switch v := msg.(type) {
@@ -84,8 +85,10 @@ func (s *Server) HandleTCP(conn net.Conn) {
 				ss.logger = ss.logger.With().Interface("dispatcher", v).Logger()
 			}
 
+			// XXX: need to start background handler for watching for tickets
 			ss.logger.Info().Msg("new dispatcher")
-			_ = s.t.Check(v.Roads)
+			unsub := s.t.subs.Subscribe(v.Roads, ss.ticketC)
+			defer unsub()
 		case *message.Plate:
 			// It is an error for a client that has not identified itself as a camera to send a Plate message.
 			if ss.camera == nil {
@@ -109,43 +112,4 @@ func (s *Server) HandleTCP(conn net.Conn) {
 			return
 		}
 	}
-}
-
-// Error logs any errors and sends the client the same error message
-func (ss *Session) Error(msg string) {
-	ss.logger.Error().Msg(msg)
-
-	e := &message.Error{Msg: msg}
-	if _, err := e.WriteTo(ss); err != nil {
-		ss.logger.Err(err).Msg("writing error")
-	}
-}
-
-// StartHeartbeat starts sending a heartbeat message to the client at every interval d
-func (ss *Session) StartHeartbeat(d time.Duration) {
-	ss.heartbeating = true
-	if d == 0 {
-		return
-	}
-	ss.logger.Info().Dur("interval", d).Msg("starting heartbeat")
-
-	ticker := time.NewTicker(d)
-	go func() {
-		defer ticker.Stop()
-
-		hb := &message.Heartbeat{}
-		for {
-			select {
-			case <-ss.doneC:
-				ss.logger.Info().Msg("stopping heartbeat")
-				return
-			case <-ticker.C:
-				ss.logger.Info().Msg("sending heartbeat")
-
-				if _, err := hb.WriteTo(ss); err != nil {
-					ss.logger.Err(err).Msg("writing heartbeat")
-				}
-			}
-		}
-	}()
 }

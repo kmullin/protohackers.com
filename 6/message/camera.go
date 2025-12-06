@@ -6,8 +6,11 @@ import (
 	"io"
 )
 
+type RoadID uint16
+
 type IAmCamera struct {
-	Road, Mile, Limit uint16
+	Road        RoadID
+	Mile, Limit uint16
 }
 
 func (iac *IAmCamera) MarshalBinary() ([]byte, error) {

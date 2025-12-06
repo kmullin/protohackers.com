@@ -7,7 +7,7 @@ import (
 )
 
 type IAmDispatcher struct {
-	Roads []uint16
+	Roads []RoadID
 }
 
 func (iad *IAmDispatcher) MarshalBinary() ([]byte, error) {
@@ -38,7 +38,7 @@ func readIAmDispatcherMsg(r io.Reader) (*IAmDispatcher, error) {
 	}
 
 	var iad IAmDispatcher
-	iad.Roads = make([]uint16, numRoads)
+	iad.Roads = make([]RoadID, numRoads)
 	if err := binary.Read(r, byteOrder, &iad.Roads); err != nil {
 		return nil, err
 	}

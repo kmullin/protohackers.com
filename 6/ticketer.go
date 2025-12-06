@@ -2,61 +2,35 @@ package main
 
 import (
 	"math"
-	"sort"
 	"sync"
-	"time"
 
 	"github.com/kmullin/protohackers.com/6/message"
 	"github.com/rs/zerolog/log"
 )
 
-type Observation struct {
-	Timestamp time.Time
-	Mile      uint16
-	Limit     uint16
-}
-
-type Observations []Observation
-
 type Ticketer struct {
-	t  map[uint16]map[string]Observations
-	mu *sync.RWMutex
-}
+	obs map[message.RoadID]map[string]Observations
+	mu  sync.RWMutex
 
-// insertSorted inserts into the slice in a sorted manner
-func (o *Observations) insertSorted(obs Observation) {
-	s := *o
-
-	// find insertion index using binary search
-	i := sort.Search(len(s), func(i int) bool {
-		return s[i].Timestamp.After(obs.Timestamp) || s[i].Timestamp.Equal(obs.Timestamp)
-	})
-
-	// expand slice by 1
-	s = append(s, Observation{})
-
-	// shift elements to the right
-	copy(s[i+1:], s[i:])
-
-	// insert the new element
-	s[i] = obs
-
-	*o = s
+	subs *RoadEventBus
 }
 
 func NewTicketer() *Ticketer {
 	return &Ticketer{
-		t:  make(map[uint16]map[string]Observations),
-		mu: new(sync.RWMutex),
+		obs:  make(map[message.RoadID]map[string]Observations),
+		subs: NewRoadEventBus(),
 	}
 }
 
+// Observe adds observations to the global state for each plate message from a camera
 func (t *Ticketer) Observe(plate *message.Plate, camera *message.IAmCamera) {
 	t.mu.Lock()
-	inner, ok := t.t[camera.Road]
+	defer t.mu.Unlock()
+
+	inner, ok := t.obs[camera.Road]
 	if !ok {
 		inner = make(map[string]Observations)
-		t.t[camera.Road] = inner
+		t.obs[camera.Road] = inner
 	}
 
 	os := inner[plate.Plate]
@@ -70,59 +44,57 @@ func (t *Ticketer) Observe(plate *message.Plate, camera *message.IAmCamera) {
 	os.insertSorted(o)
 	inner[plate.Plate] = os
 
-	log.Info().Interface("map", t.t).Msg("")
-	t.mu.Unlock()
+	log.Info().Interface("map", t.obs).Msg("observation")
+
+	t.checkRoad(camera.Road)
 }
 
-func (t *Ticketer) Check(roads []uint16) *message.Ticket {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
+// checkRoad checks for tickets for a certain road and issues a ticket to the channel
+func (t *Ticketer) checkRoad(road message.RoadID) {
+	// mutex already locked
+	for plate, observations := range t.obs[road] {
+		if len(observations) < 2 {
+			// we need at least 2 observations to determine speed
+			continue
+		}
 
-	var ticket message.Ticket
+		for i := 0; i < len(observations)-1; i++ {
+			a := observations[i]
+			b := observations[i+1]
 
-	for _, road := range roads {
-		for plate, observations := range t.t[road] {
-			if len(observations) < 2 {
-				continue
-			}
+			distance := math.Abs(float64(a.Mile) - float64(b.Mile))
+			duration := b.Timestamp.Sub(a.Timestamp).Hours()
+			speed := distance / duration
 
-			for i := 0; i < len(observations)-1; i++ {
-				a := observations[i]
-				b := observations[i+1]
+			log.Info().
+				Interface("a", a).
+				Interface("b", b).
+				Float64("speed", speed).
+				Float64("distance", distance).
+				Float64("duration", duration).
+				Str("plate", plate).
+				Uint16("road", uint16(road)).
+				Uint16("limit", a.Limit).
+				Msg("get speed")
 
-				distance := math.Abs(float64(a.Mile) - float64(b.Mile))
-				duration := b.Timestamp.Sub(a.Timestamp).Hours()
-				speed := distance / duration
-
-				log.Info().
-					Interface("a", a).
-					Interface("b", b).
-					Float64("speed", speed).
-					Float64("distance", distance).
-					Float64("duration", duration).
-					Str("plate", plate).
-					Uint16("road", road).
-					Uint16("limit", a.Limit).
-					Msg("getSpeed")
-
-				// always required to ticket a car that is exceeding the speed limit by 0.5 mph or more
-				if speed >= (float64(a.Limit) + 0.5) {
-					ticket = message.Ticket{
-						Plate:      plate,
-						Road:       road,
-						Mile1:      a.Mile,
-						Timestamp1: a.Timestamp,
-						Mile2:      b.Mile,
-						Timestamp2: b.Timestamp,
-						Speed:      uint16(speed),
-					}
-					log.Info().
-						Interface("ticket", ticket).
-						Msg("issuing ticket")
+			// always required to ticket a car that is exceeding the speed limit by 0.5 mph or more
+			if speed >= (float64(a.Limit) + 0.5) {
+				ticket := message.Ticket{
+					Plate:      plate,
+					Road:       road,
+					Mile1:      a.Mile,
+					Timestamp1: a.Timestamp,
+					Mile2:      b.Mile,
+					Timestamp2: b.Timestamp,
+					Speed:      uint16(speed),
 				}
+				log.Info().
+					Interface("ticket", ticket).
+					Msg("issuing ticket")
+
+				t.subs.IssueTicket(ticket)
+				// XXX: need to delete observations
 			}
 		}
 	}
-
-	return &ticket
 }

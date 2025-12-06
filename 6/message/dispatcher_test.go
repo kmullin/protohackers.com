@@ -16,13 +16,13 @@ func TestIAmDispatcher(t *testing.T) {
 		{
 			Msg: []byte{0x81, 0x01, 0x00, 0x42},
 			Expected: &IAmDispatcher{
-				Roads: []uint16{66},
+				Roads: []RoadID{66},
 			},
 		},
 		{
 			Msg: []byte{0x81, 0x03, 0x00, 0x42, 0x01, 0x70, 0x13, 0x88},
 			Expected: &IAmDispatcher{
-				Roads: []uint16{66, 368, 5000},
+				Roads: []RoadID{66, 368, 5000},
 			},
 		},
 	}

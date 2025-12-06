@@ -9,7 +9,7 @@ import (
 
 type Ticket struct {
 	Plate      string
-	Road       uint16
+	Road       RoadID
 	Mile1      uint16
 	Timestamp1 time.Time
 	Mile2      uint16
@@ -29,7 +29,7 @@ func (t *Ticket) MarshalBinary() ([]byte, error) {
 	}
 
 	msg := struct {
-		Road       uint16
+		Road       RoadID
 		Mile1      uint16
 		Timestamp1 uint32
 		Mile2      uint16
