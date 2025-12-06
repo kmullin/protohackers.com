@@ -48,7 +48,7 @@ func main() {
 		log.Error().Err(err).Msg("write failed")
 	}
 
-	msg = &message.Plate{Plate: "UN1X", Timestamp: time.Unix(60, 0).UTC()}
+	msg = &message.Plate{Plate: "UN1X", Timestamp: time.Unix(45, 0).UTC()}
 	if _, err := msg.WriteTo(conn); err != nil {
 		log.Error().Err(err).Msg("write failed")
 	}
