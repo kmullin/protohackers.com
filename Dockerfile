@@ -1,4 +1,4 @@
-FROM golang:1.19-alpine as BUILDER
+FROM golang:1.25-alpine AS builder
 
 ARG problem=0
 
@@ -9,5 +9,5 @@ RUN go build -v -o /usr/local/bin/app ./$problem
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-COPY --from=BUILDER /usr/local/bin/app /usr/local/bin/app
+COPY --from=builder /usr/local/bin/app /usr/local/bin/app
 CMD ["app"]
