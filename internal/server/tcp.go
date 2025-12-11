@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
 )
 
 type TCPHandlerFunc func(net.Conn)
@@ -17,9 +18,7 @@ type TCPHandler interface {
 }
 
 func TCP(h TCPHandler) {
-	addr := GetListenAddr()
-
-	ln, err := net.Listen("tcp", addr)
+	ln, err := net.Listen("tcp", viper.GetString("addr"))
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to listen")
 	}

@@ -1,13 +1,9 @@
 package server
 
-import "os"
+import "github.com/spf13/viper"
 
-const defaultAddr = ":8080"
-
-func GetListenAddr() string {
-	addr := os.Getenv("ADDRESS")
-	if addr == "" {
-		addr = defaultAddr
-	}
-	return addr
+// here for backwards compatibility
+func init() {
+	viper.SetDefault("addr", ":8080")
+	viper.MustBindEnv("addr", "ADDRESS")
 }
