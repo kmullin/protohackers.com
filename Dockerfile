@@ -1,13 +1,17 @@
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25-trixie AS builder
 
 ARG problem=0
 
 WORKDIR /usr/src/app
 
-COPY . .
-RUN go build -v -o /usr/local/bin/app ./$problem
+# Download Go modules
+COPY go.mod go.sum .
+RUN go mod download
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
+COPY . .
+RUN go build -o /usr/local/bin/app ./$problem
+
+FROM debian:trixie
+# RUN apk --no-cache add ca-certificates
 COPY --from=builder /usr/local/bin/app /usr/local/bin/app
 CMD ["app"]
