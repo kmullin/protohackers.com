@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/kmullin/protohackers.com/5/proxy"
-	"github.com/kmullin/protohackers.com/server"
+	"github.com/kmullin/protohackers.com/internal/server"
 )
 
 func main() {

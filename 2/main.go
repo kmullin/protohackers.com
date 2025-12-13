@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/kmullin/protohackers.com/2/message"
-	"github.com/kmullin/protohackers.com/server"
+	"github.com/kmullin/protohackers.com/internal/server"
 )
 
 func main() {

@@ -9,7 +9,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/kmullin/protohackers.com/server"
+	"github.com/kmullin/protohackers.com/internal/server"
 )
 
 func main() {
