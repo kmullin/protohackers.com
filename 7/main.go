@@ -4,7 +4,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kmullin/protohackers.com/server"
+	"github.com/kmullin/protohackers.com/internal/server"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
