@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/rs/zerolog"
@@ -28,6 +29,11 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 		RunE:  runE,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			level, err := zerolog.ParseLevel(strings.ToLower(viper.GetString("log-level")))
+			if err == nil {
+				zerolog.SetGlobalLevel(level)
+			}
+
 			if viper.GetBool("text") {
 				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 			}
@@ -37,8 +43,10 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 	rootCmd.SetContext(ctx)
 
 	rootCmd.PersistentFlags().BoolP("text", "t", false, "use text logging")
+	rootCmd.PersistentFlags().StringP("log-level", "", "debug", "log level")
 	rootCmd.PersistentFlags().StringP("addr", "a", ":8080", "listening address")
 	viper.BindPFlags(rootCmd.PersistentFlags())
 	viper.MustBindEnv("addr", "ADDRESS")
+	viper.MustBindEnv("log-level", "LOG_LEVEL")
 	return rootCmd, stop
 }
