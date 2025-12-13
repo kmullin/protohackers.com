@@ -11,8 +11,7 @@ import (
 func main() {
 	rootCmd := cmd.New("line reversal", 7, func(cmd *cobra.Command, args []string) error {
 		s := NewServer(cmd.Context())
-		server.UDP(s)
-		return nil
+		return server.UDP(s)
 	})
 
 	if err := rootCmd.Execute(); err != nil {
