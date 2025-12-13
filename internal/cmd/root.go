@@ -24,7 +24,7 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 
 	rootCmd := &cobra.Command{
 		Use:   fmt.Sprintf("problem%v", problem),
-		Short: fmt.Sprintf("%v (%v)", cases.Title(language.Und).String(name), problem),
+		Short: fmt.Sprintf("%v (# %v)", cases.Title(language.Und).String(name), problem),
 		RunE:  runE,
 
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
@@ -37,6 +37,7 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 	rootCmd.SetContext(ctx)
 
 	rootCmd.PersistentFlags().BoolP("text", "t", false, "use text logging")
+	rootCmd.PersistentFlags().StringP("addr", "a", ":8080", "listening address")
 	viper.BindPFlags(rootCmd.PersistentFlags())
 	return rootCmd, stop
 }

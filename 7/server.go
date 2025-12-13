@@ -37,8 +37,11 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 	for {
 		buf := make([]byte, bufSize)
 
+		log := s.log
 		n, addr, err := conn.ReadFrom(buf)
-		log := s.log.With().Stringer("addr", addr).Logger()
+		if addr != nil {
+			log = s.log.With().Stringer("addr", addr).Logger()
+		}
 		if err != nil {
 			if errors.Is(err, net.ErrClosed) || s.ctx.Err() != nil {
 				log.Err(s.ctx.Err()).Msg("reading from")
