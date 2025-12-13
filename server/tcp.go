@@ -2,26 +2,23 @@ package server
 
 import (
 	"net"
-	"os"
 
 	"github.com/rs/zerolog/log"
 )
 
-type HandlerFunc func(net.Conn)
+type TCPHandlerFunc func(net.Conn)
 
-func (f HandlerFunc) HandleTCP(conn net.Conn) {
+func (f TCPHandlerFunc) HandleTCP(conn net.Conn) {
 	f(conn)
 }
 
-type Handler interface {
+type TCPHandler interface {
 	HandleTCP(net.Conn)
 }
 
-func TCP(h Handler) {
-	addr := os.Getenv("ADDRESS")
-	if addr == "" {
-		addr = ":8080"
-	}
+func TCP(h TCPHandler) {
+	addr := GetListenAddr()
+
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatal().Err(err).Msg("unable to listen")

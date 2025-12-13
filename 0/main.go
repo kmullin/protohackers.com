@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	server.TCP(server.HandlerFunc(echo))
+	server.TCP(server.TCPHandlerFunc(echo))
 }
 
 func echo(conn net.Conn) {

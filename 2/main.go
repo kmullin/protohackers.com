@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	server.TCP(server.HandlerFunc(handler))
+	server.TCP(server.TCPHandlerFunc(handler))
 }
 
 type insertCache map[time.Time]int32
