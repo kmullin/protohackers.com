@@ -16,13 +16,7 @@ import (
 	"golang.org/x/text/language"
 )
 
-func New(name string, problem int, runE func(cmd *cobra.Command, args []string) error) (*cobra.Command, context.CancelFunc) {
-	ctx, stop := signal.NotifyContext(
-		context.Background(),
-		os.Interrupt,
-		syscall.SIGTERM,
-	)
-
+func New(name string, problem int, runE func(cmd *cobra.Command, args []string) error) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   fmt.Sprintf("problem%v", problem),
 		Short: fmt.Sprintf("%v (# %v)", cases.Title(language.Und).String(name), problem),
@@ -37,10 +31,16 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 			if viper.GetBool("text") {
 				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 			}
+
+			ctx, _ := signal.NotifyContext(
+				context.Background(),
+				os.Interrupt,
+				syscall.SIGTERM,
+			)
+
+			cmd.SetContext(ctx)
 		},
 	}
-
-	rootCmd.SetContext(ctx)
 
 	rootCmd.PersistentFlags().BoolP("text", "t", false, "use text logging")
 	rootCmd.PersistentFlags().StringP("log-level", "", "debug", "log level")
@@ -48,5 +48,5 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 	viper.BindPFlags(rootCmd.PersistentFlags())
 	viper.MustBindEnv("addr", "ADDRESS")
 	viper.MustBindEnv("log-level", "LOG_LEVEL")
-	return rootCmd, stop
+	return rootCmd
 }
