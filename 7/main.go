@@ -5,13 +5,12 @@ import (
 
 	"github.com/kmullin/protohackers.com/internal/cmd"
 	"github.com/kmullin/protohackers.com/internal/server"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
 func main() {
 	rootCmd, stop := cmd.New("line reversal", 7, func(cmd *cobra.Command, args []string) error {
-		s := NewServer(cmd.Context(), log.Logger)
+		s := NewServer(cmd.Context())
 		server.UDP(s)
 		return nil
 	})

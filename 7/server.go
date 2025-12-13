@@ -7,22 +7,22 @@ import (
 
 	"github.com/kmullin/protohackers.com/7/message"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // LRCP messages must be smaller than 1000 bytes. You might have to break up data into multiple data messages in order to fit it below this limit.
 const bufSize = 999
 
 type Server struct {
-	log zerolog.Logger
-
 	ctx context.Context
+	log zerolog.Logger
 	sc  *SessionCache
 }
 
-func NewServer(ctx context.Context, logger zerolog.Logger) *Server {
+func NewServer(ctx context.Context) *Server {
 	return &Server{
-		log: logger,
 		ctx: ctx,
+		log: log.Logger,
 		sc:  NewSessionCache(),
 	}
 }
