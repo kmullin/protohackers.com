@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"net"
 
 	"github.com/kmullin/protohackers.com/7/message"
@@ -13,18 +15,24 @@ const bufSize = 999
 type Server struct {
 	log zerolog.Logger
 
-	sc *SessionCache
+	ctx context.Context
+	sc  *SessionCache
 }
 
-func NewServer(logger zerolog.Logger) *Server {
+func NewServer(ctx context.Context, logger zerolog.Logger) *Server {
 	return &Server{
 		log: logger,
+		ctx: ctx,
 		sc:  NewSessionCache(),
 	}
 }
 
 func (s *Server) HandleUDP(conn net.PacketConn) {
 	defer conn.Close()
+	go func() {
+		<-s.ctx.Done()
+		conn.Close()
+	}()
 
 	for {
 		buf := make([]byte, bufSize)
@@ -32,6 +40,10 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 		n, addr, err := conn.ReadFrom(buf)
 		log := s.log.With().Stringer("addr", addr).Logger()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) || s.ctx.Err() != nil {
+				log.Err(s.ctx.Err()).Msg("reading from")
+				return
+			}
 			log.Error().Err(err).Msg("reading from")
 			continue
 		}

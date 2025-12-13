@@ -1,23 +1,23 @@
 package main
 
 import (
-	"flag"
 	"os"
 
+	"github.com/kmullin/protohackers.com/internal/cmd"
 	"github.com/kmullin/protohackers.com/internal/server"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	var textLogging bool
-	flag.BoolVar(&textLogging, "text", false, "turn on text logging")
-	flag.Parse()
+	rootCmd, stop := cmd.New("line reversal", 7, func(cmd *cobra.Command, args []string) error {
+		s := NewServer(cmd.Context(), log.Logger)
+		server.UDP(s)
+		return nil
+	})
+	defer stop()
 
-	if textLogging {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
 	}
-
-	s := NewServer(log.Logger)
-	server.UDP(s)
 }
