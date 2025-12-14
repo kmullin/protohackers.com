@@ -22,5 +22,8 @@ func (d *Data) Marshal() (data []byte) {
 }
 
 func (d *Data) MarshalZerologObject(e *zerolog.Event) {
-	e.Int("session", d.SessionID).Int("pos", d.Pos).Str("data", string(d.Data))
+	e.Int("session", d.SessionID).
+		Int("pos", d.Pos).
+		Int("len", len(d.Data)).
+		Bytes("data", d.Data)
 }

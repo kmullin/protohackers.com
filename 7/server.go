@@ -59,7 +59,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 
 		switch m := msg.(type) {
 		case *message.Connect:
-			log.Debug().EmbedObject(m).Msg("recv connect msg")
+			log.Info().EmbedObject(m).Msg("recv connect msg")
 			ss := s.sc.Get(m.SessionID)
 			if ss == nil {
 				ss = NewSession(m.SessionID, addr, conn, s.log)
@@ -73,7 +73,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 				continue
 			}
 		case *message.Data:
-			log.Debug().EmbedObject(m).Msg("recv data msg")
+			log.Info().EmbedObject(m).Msg("recv data msg")
 
 			ss := s.sc.Get(m.SessionID)
 			// If the session is not open: send /close/SESSION/ and stop
@@ -93,7 +93,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 
 			log.Debug().EmbedObject(ss).Msg("data processed")
 		case *message.Ack:
-			log.Debug().EmbedObject(m).Msg("recv ack msg")
+			log.Info().EmbedObject(m).Msg("recv ack msg")
 
 			ss := s.sc.Get(m.SessionID)
 			// If the session is not open: send /close/SESSION/ and stop

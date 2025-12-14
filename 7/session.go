@@ -37,22 +37,24 @@ func NewSession(id int, addr net.Addr, pc net.PacketConn, logger zerolog.Logger)
 		ID:         id,
 		Addr:       addr,
 		PacketConn: pc,
+		lastSeen:   time.Now(),
 		log:        logger.With().Int("session", id).Stringer("addr", addr).Logger(),
 	}
 	ss.ttl = time.AfterFunc(sessionTimeout, func() {
+		ss.log.Info().EmbedObject(ss).Msg("session expired")
 		err := ss.Close()
 		if err != nil {
-			ss.log.Error().Err(err).Msg("err sending close")
+			ss.log.Err(err).EmbedObject(ss).Msg("err sending close")
 		}
 	})
 
-	ss.log.Debug().Msg("new session")
+	ss.log.Info().EmbedObject(ss).Msg("new session")
 	return ss
 }
 
 // AddData adds data to the internal buffer, it unescapes any escape characters
 func (ss *Session) AddData(m *message.Data) error {
-	ss.resetTimer()
+	defer ss.resetTimer()
 
 	// unescape data payload
 	data := unescapeData(m.Data)
@@ -70,9 +72,9 @@ func (ss *Session) AddData(m *message.Data) error {
 	copy(ss.recvBuf[m.Pos:endPos], data)
 
 	ss.log.Debug().
-		Bytes("buf", ss.recvBuf).
-		Int("len", len(data)).
-		Int("pos", m.Pos).
+		EmbedObject(m).
+		EmbedObject(ss).
+		Int("datalen", len(data)).
 		Msg("inserted data")
 	err := ss.Ack(len(data))
 
@@ -90,13 +92,13 @@ func (ss *Session) Ack(length int) error {
 func (ss *Session) Close() error {
 	m := &message.Close{SessionID: ss.ID}
 	_, err := ss.WriteTo(m.Marshal(), ss.Addr)
-	ss.log.Debug().Msg("sent close msg")
+	ss.log.Info().EmbedObject(ss).Msg("sent close msg")
 	return err
 }
 
 func (ss *Session) sendAck(m *message.Ack) error {
 	_, err := ss.WriteTo(m.Marshal(), ss.Addr)
-	ss.log.Debug().EmbedObject(m).Msg("sent ack msg")
+	ss.log.Info().EmbedObject(ss).EmbedObject(m).Msg("sent ack msg")
 	return err
 }
 
@@ -110,7 +112,7 @@ func (ss *Session) sendPrevAck() error {
 func (ss *Session) sendData(pos int, data []byte) error {
 	m := &message.Data{SessionID: ss.ID, Pos: pos, Data: escapeData(data)}
 	_, err := ss.WriteTo(m.Marshal(), ss.Addr)
-	ss.log.Debug().EmbedObject(m).Msg("sent data msg")
+	ss.log.Info().EmbedObject(ss).EmbedObject(m).Msg("sent data msg")
 	return err
 }
 
@@ -120,7 +122,7 @@ func (ss *Session) checkLines() {
 		ss.log.Debug().Bytes("reverse", b).Bytes("line", line).Msg("check lines")
 		err := ss.sendData(0, b)
 		if err != nil {
-			ss.log.Error().Err(err).Msg("sending data msg")
+			ss.log.Err(err).EmbedObject(ss).Msg("sending data msg")
 		}
 	}
 }
@@ -135,5 +137,5 @@ func (ss *Session) MarshalZerologObject(e *zerolog.Event) {
 		Stringer("addr", ss.Addr).
 		Int("len", len(ss.recvBuf)).
 		Str("buf", string(ss.recvBuf)).
-		Stringer("last", time.Since(ss.lastSeen))
+		Dur("lastSeen", time.Since(ss.lastSeen).Round(zerolog.DurationFieldUnit))
 }
