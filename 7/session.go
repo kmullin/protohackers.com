@@ -135,5 +135,5 @@ func (ss *Session) MarshalZerologObject(e *zerolog.Event) {
 		Stringer("addr", ss.Addr).
 		Int("len", len(ss.recvBuf)).
 		Str("buf", string(ss.recvBuf)).
-		Time("last", ss.lastSeen)
+		Stringer("last", time.Since(ss.lastSeen))
 }
