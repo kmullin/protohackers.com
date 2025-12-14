@@ -96,7 +96,7 @@ func (ss *Session) Close() error {
 
 func (ss *Session) sendAck(m *message.Ack) error {
 	_, err := ss.WriteTo(m.Marshal(), ss.Addr)
-	ss.log.Debug().Object("msg", m).Msg("sent ack msg")
+	ss.log.Debug().EmbedObject(m).Msg("sent ack msg")
 	return err
 }
 
@@ -110,7 +110,7 @@ func (ss *Session) sendPrevAck() error {
 func (ss *Session) sendData(pos int, data []byte) error {
 	m := &message.Data{SessionID: ss.ID, Pos: pos, Data: escapeData(data)}
 	_, err := ss.WriteTo(m.Marshal(), ss.Addr)
-	ss.log.Debug().Object("msg", m).Msg("sent data msg")
+	ss.log.Debug().EmbedObject(m).Msg("sent data msg")
 	return err
 }
 

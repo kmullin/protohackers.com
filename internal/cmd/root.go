@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -30,6 +33,13 @@ func New(name string, problem int, runE func(cmd *cobra.Command, args []string) 
 
 			if viper.GetBool("text") {
 				log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+			}
+			log.Logger = log.With().Caller().Logger()
+
+			zerolog.TimeFieldFormat = time.DateTime
+			// set it similary to log.Lshortfile
+			zerolog.CallerMarshalFunc = func(pc uintptr, file string, line int) string {
+				return filepath.Base(file) + ":" + strconv.Itoa(line)
 			}
 
 			ctx, _ := signal.NotifyContext(
