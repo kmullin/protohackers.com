@@ -10,9 +10,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// LRCP messages must be smaller than 1000 bytes. You might have to break up data into multiple data messages in order to fit it below this limit.
-const bufSize = 999
-
 type Server struct {
 	ctx context.Context
 	log zerolog.Logger
@@ -35,7 +32,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 	}()
 
 	for {
-		buf := make([]byte, bufSize)
+		buf := make([]byte, message.MaxSize)
 
 		log := s.log
 		n, addr, err := conn.ReadFrom(buf)

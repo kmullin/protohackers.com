@@ -13,6 +13,9 @@ var separator = []byte("/")
 // Numeric field values must be smaller than 2147483648
 const maxMsgInt = 2147483648
 
+// LRCP messages must be smaller than 1000 bytes. You might have to break up data into multiple data messages in order to fit it below this limit.
+const MaxSize = 999
+
 // our message types
 var (
 	msgConnect = []byte("connect")
