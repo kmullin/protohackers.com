@@ -14,7 +14,7 @@ import (
 // Step lets us define the expectations for the server to perform
 type Step struct {
 	Send   message.Msg
-	Expect message.Msg
+	Expect []message.Msg
 }
 
 func PacketConnPair(t *testing.T) (*net.UDPConn, *net.UDPConn) {
@@ -54,14 +54,14 @@ func runTranscript(t *testing.T, client *net.UDPConn, steps []Step) {
 			assert.NoErrorf(t, err, "step %d send failed", i)
 		}
 
-		if step.Expect != nil {
+		for ii, expect := range step.Expect {
 			n, _, err := client.ReadFromUDP(buf)
 			assert.NoErrorf(t, err, "step %d read failed", i)
 
 			msg, err := message.New(buf[:n])
-			assert.NoErrorf(t, err, "step %d unmarshal failed", i)
+			assert.NoErrorf(t, err, "step %d expect %v unmarshal failed", i, ii)
 
-			assert.Equalf(t, step.Expect, msg, "step %d mismatch", i)
+			assert.Equalf(t, expect, msg, "step %d expect %v mismatch", i, ii)
 		}
 	}
 }
@@ -88,20 +88,30 @@ func TestSessionExample(t *testing.T) {
 	// our client perspective
 	steps := []Step{
 		{
-			Send:   &message.Connect{SessionID: 12345},
-			Expect: &message.Ack{SessionID: 12345, Length: 0},
+			Send: &message.Connect{SessionID: 12345},
+			Expect: []message.Msg{
+				&message.Ack{SessionID: 12345, Length: 0},
+			},
 		},
 		{
-			Send:   &message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
-			Expect: &message.Ack{SessionID: 12345, Length: 6},
+			Send: &message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
+			Expect: []message.Msg{
+				&message.Ack{SessionID: 12345, Length: 6},
+				&message.Data{SessionID: 12345, Pos: 0, Data: []byte("olleh\n")},
+			},
 		},
 		{
-			Send:   &message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
-			Expect: &message.Ack{SessionID: 12345, Length: 20},
+			Send: &message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
+			Expect: []message.Msg{
+				&message.Ack{SessionID: 12345, Length: 20},
+				&message.Data{SessionID: 12345, Pos: 6, Data: []byte("!dlrow ,olleH\n")},
+			},
 		},
 		{
-			Send:   &message.Close{SessionID: 12345},
-			Expect: &message.Close{SessionID: 12345},
+			Send: &message.Close{SessionID: 12345},
+			Expect: []message.Msg{
+				&message.Close{SessionID: 12345},
+			},
 		},
 	}
 
