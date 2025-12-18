@@ -10,33 +10,59 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PacketConn(t *testing.T) (client, server *net.UDPConn) {
+// Step lets us define the expectations for the server to perform
+type Step struct {
+	Send   message.Msg
+	Expect message.Msg
+}
+
+func PacketConnPair(t *testing.T) (*net.UDPConn, *net.UDPConn) {
 	t.Helper()
 
-	// Server listens
 	serverAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	server, err = net.ListenUDP("udp", serverAddr)
+	server, err := net.ListenUDP("udp", serverAddr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Client dials server
-	client, err = net.DialUDP("udp", nil, server.LocalAddr().(*net.UDPAddr))
+	client, err := net.DialUDP("udp", nil, server.LocalAddr().(*net.UDPAddr))
 	if err != nil {
 		server.Close()
 		t.Fatal(err)
 	}
 
-	// Set deadlines so tests don't hang
 	deadline := time.Now().Add(3 * time.Second)
-	client.SetDeadline(deadline)
-	server.SetDeadline(deadline)
+	_ = client.SetDeadline(deadline)
+	_ = server.SetDeadline(deadline)
 
 	return client, server
+}
+
+func runTranscript(t *testing.T, client *net.UDPConn, steps []Step) {
+	t.Helper()
+
+	buf := make([]byte, message.MaxSize)
+
+	for i, step := range steps {
+		if step.Send != nil {
+			_, err := client.Write(step.Send.Marshal())
+			assert.NoErrorf(t, err, "step %d send failed", i)
+		}
+
+		if step.Expect != nil {
+			n, _, err := client.ReadFromUDP(buf)
+			assert.NoErrorf(t, err, "step %d read failed", i)
+
+			msg, err := message.New(buf[:n])
+			assert.NoErrorf(t, err, "step %d unmarshal failed", i)
+
+			assert.Equalf(t, step.Expect, msg, "step %d mismatch", i)
+		}
+	}
 }
 
 /*
@@ -54,38 +80,61 @@ func PacketConn(t *testing.T) (client, server *net.UDPConn) {
 --> /close/12345/
 */
 func TestSessionExample(t *testing.T) {
-	client, server := PacketConn(t)
+	client, server := PacketConnPair(t)
 	defer client.Close()
 	defer server.Close()
 
-	// write these, then expect this many msgs on the server
-	msgs := []message.Msg{
-		&message.Connect{SessionID: 12345},
-		&message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
-		&message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
-		&message.Close{SessionID: 12345},
+	// our client perspective
+	steps := []Step{
+		{
+			Send:   &message.Connect{SessionID: 12345},
+			Expect: &message.Ack{SessionID: 12345, Length: 0},
+		},
+		{
+			Send:   &message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
+			Expect: &message.Ack{SessionID: 12345, Length: 6},
+		},
+		{
+			Send:   &message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
+			Expect: &message.Ack{SessionID: 12345, Length: 20},
+		},
+		{
+			Send:   &message.Close{SessionID: 12345},
+			Expect: &message.Close{SessionID: 12345},
+		},
 	}
 
 	var wg sync.WaitGroup
 	wg.Add(2)
+	// client
 	go func() {
 		defer wg.Done()
 
-		for _, msg := range msgs {
-			n, err := client.Write(msg.Marshal())
+		for _, step := range steps {
+			n, err := client.Write(step.Send.Marshal())
 			assert.NoError(t, err)
 			t.Logf("wrote %v bytes to %v", n, client)
+
+			buf := make([]byte, message.MaxSize)
+			n, _, err = client.ReadFrom(buf)
+			assert.NoError(t, err)
 		}
 	}()
 
+	// server
 	go func() {
 		defer wg.Done()
 
 		buf := make([]byte, message.MaxSize)
-		for range msgs {
+		for i := range steps {
 			n, addr, err := server.ReadFromUDP(buf)
-			assert.NoError(t, err)
 			t.Logf("server received %d bytes from %v: %q", n, addr, buf[:n])
+			assert.NoError(t, err)
+
+			msg, err := message.New(buf[:n])
+			assert.NoError(t, err)
+			t.Logf("received message: %#v", msg)
+			assert.Equal(t, steps[i], msg)
 		}
 	}()
 
