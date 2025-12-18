@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PacketConn(t *testing.T) (client, server net.PacketConn) {
+func PacketConn(t *testing.T) (client, server *net.UDPConn) {
 	t.Helper()
 
 	// Server listens
@@ -58,31 +58,36 @@ func TestSessionExample(t *testing.T) {
 	defer client.Close()
 	defer server.Close()
 
+	// write these, then expect this many msgs on the server
+	msgs := []message.Msg{
+		&message.Connect{SessionID: 12345},
+		&message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
+		&message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
+		&message.Close{SessionID: 12345},
+	}
+
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	go func() {
 		defer wg.Done()
-
-		msgs := []message.Msg{
-			&message.Connect{SessionID: 12345},
-			&message.Data{SessionID: 12345, Pos: 0, Data: []byte("hello\n")},
-			&message.Data{SessionID: 12345, Pos: 6, Data: []byte("Hello, world!\n")},
-			&message.Close{SessionID: 12345},
-		}
 
 		for _, msg := range msgs {
 			n, err := client.Write(msg.Marshal())
 			assert.NoError(t, err)
-			t.Logf("wrote %v bytes to %v", n, conn.LocalAddr())
+			t.Logf("wrote %v bytes to %v", n, client)
 		}
 	}()
 
-	t.Logf("conn: %+v", conn)
+	go func() {
+		defer wg.Done()
 
-	// buf := make([]byte, message.MaxSize)
-	// n, addr, err := conn.ReadFrom(buf)
-	// assert.NoError(t, err)
+		buf := make([]byte, message.MaxSize)
+		for range msgs {
+			n, addr, err := server.ReadFromUDP(buf)
+			assert.NoError(t, err)
+			t.Logf("server received %d bytes from %v: %q", n, addr, buf[:n])
+		}
+	}()
 
-	// t.Logf("read %v bytes from %v", n, addr)
 	wg.Wait()
 }
