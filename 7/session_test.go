@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"net"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/kmullin/protohackers.com/7/message"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -104,39 +105,22 @@ func TestSessionExample(t *testing.T) {
 		},
 	}
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	// client
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// start our server
 	go func() {
-		defer wg.Done()
-
-		for _, step := range steps {
-			n, err := client.Write(step.Send.Marshal())
-			assert.NoError(t, err)
-			t.Logf("wrote %v bytes to %v", n, client)
-
-			buf := make([]byte, message.MaxSize)
-			n, _, err = client.ReadFrom(buf)
-			assert.NoError(t, err)
-		}
+		s := NewServer(ctx)
+		s.log = testLogger(t)
+		s.HandleUDP(server)
 	}()
 
-	// server
-	go func() {
-		defer wg.Done()
+	runTranscript(t, client, steps)
+}
 
-		buf := make([]byte, message.MaxSize)
-		for i := range steps {
-			n, addr, err := server.ReadFromUDP(buf)
-			t.Logf("server received %d bytes from %v: %q", n, addr, buf[:n])
-			assert.NoError(t, err)
-
-			msg, err := message.New(buf[:n])
-			assert.NoError(t, err)
-			t.Logf("received message: %#v", msg)
-			assert.Equal(t, steps[i], msg)
-		}
-	}()
-
-	wg.Wait()
+func testLogger(t *testing.T) zerolog.Logger {
+	t.Helper()
+	cw := zerolog.ConsoleWriter{}
+	zerolog.ConsoleTestWriter(t)(&cw)
+	return zerolog.New(cw)
 }
