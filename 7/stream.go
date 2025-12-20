@@ -1,34 +1,62 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"io"
+	"sync"
 
 	"github.com/rs/zerolog"
 )
 
 var errNegativeOffset = errors.New("negative offset")
 
-type sender struct {
-	stream
-}
-
-func (s *sender) CheckLines() {
-	// return iterator ?
-}
-
 // stream handles a stream of data
 type stream struct {
-	pos int
-	buf []byte
+	readPos int // where in our stream we've read from
+	buf     []byte
+	mu      sync.RWMutex
 }
 
-func (s *stream) Pos() int {
-	return s.pos
+func (s *stream) UnreadLen() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.buf) - s.readPos
 }
 
-func (s *stream) Buf() []byte {
-	return s.buf
+func (s *stream) Len() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.buf)
+}
+
+// UnreadBuf returns a copy of the buffer
+func (s *stream) UnreadBuf(b []byte) int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return copy(b, s.buf[s.readPos:])
+}
+
+func (s *stream) Readline() (line []byte, pos int, fullLine bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.readPos >= len(s.buf) {
+		return nil, -1, false
+	}
+
+	// Look for the next newline
+	idx := bytes.IndexByte(s.buf[s.readPos:], '\n')
+	if idx < 0 {
+		return nil, -1, false
+	}
+
+	startPos := s.readPos
+	end := s.readPos + idx + 1
+	line = append(line, s.buf[s.readPos:end]...)
+	s.readPos = end
+
+	return line, startPos, true
 }
 
 func (s *stream) WriteAt(p []byte, off int64) (n int, err error) {
@@ -38,6 +66,8 @@ func (s *stream) WriteAt(p []byte, off int64) (n int, err error) {
 
 	endPos := int(off) + len(p)
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	// Grow buffer if needed
 	if endPos > len(s.buf) {
 		newBuf := make([]byte, endPos)
@@ -47,7 +77,6 @@ func (s *stream) WriteAt(p []byte, off int64) (n int, err error) {
 
 	// Overwrite
 	copy(s.buf[off:endPos], p)
-	s.pos += len(p)
 	return len(p), nil
 }
 
@@ -60,7 +89,12 @@ func (s *stream) ReadAt(p []byte, off int64) (n int, err error) {
 		return 0, io.EOF
 	}
 
+	s.mu.RLock()
 	n = copy(p, s.buf[off:])
+	s.mu.RUnlock()
+	s.mu.Lock()
+	s.readPos += n
+	s.mu.Unlock()
 	if n < len(p) {
 		return n, io.EOF
 	}
@@ -69,5 +103,7 @@ func (s *stream) ReadAt(p []byte, off int64) (n int, err error) {
 }
 
 func (s *stream) MarshalZerologObject(e *zerolog.Event) {
-	e.Bytes("buf", s.buf).Int("pos", s.pos).Int("len", len(s.buf))
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	e.Bytes("buf", s.buf).Int("len", len(s.buf)).Int("readPos", s.readPos)
 }

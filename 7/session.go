@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"net"
 	"time"
 
@@ -20,8 +19,7 @@ type Session struct {
 	ID   int
 	Addr net.Addr
 
-	recvStream *stream
-	sendStream *sender
+	stream *stream
 
 	prevAck *message.Ack
 
@@ -36,8 +34,7 @@ func NewSession(id int, addr net.Addr, pc net.PacketConn, logger zerolog.Logger)
 		PacketConn: pc,
 		ID:         id,
 		Addr:       addr,
-		recvStream: &stream{},
-		sendStream: &sender{},
+		stream:     &stream{},
 
 		lastSeen: time.Now(),
 		log:      logger.With().Int("session", id).Stringer("addr", addr).Logger(),
@@ -61,15 +58,18 @@ func (ss *Session) InsertData(m *message.Data) error {
 
 	log := ss.log.With().Object("msg", m).Logger()
 
-	if m.Pos < ss.recvStream.Pos() {
+	if m.Pos < ss.stream.UnreadLen() {
 		log.Debug().EmbedObject(ss).
-			Msgf("already read data to POS %v", ss.recvStream.Pos())
+			Msgf("already read data to POS %v", ss.stream.UnreadLen())
 		return ss.sendPrevAck()
 	}
 
 	// unescape data payload
 	data := unescapeData(m.Data)
-	ss.recvStream.WriteAt(data, int64(m.Pos))
+	_, err := ss.stream.WriteAt(data, int64(m.Pos))
+	if err != nil {
+		log.Error().Err(err).Msg("err writing at")
+	}
 
 	log.Debug().
 		EmbedObject(ss).
@@ -79,7 +79,7 @@ func (ss *Session) InsertData(m *message.Data) error {
 		).
 		Msg("inserted data")
 
-	return ss.Ack(ss.recvStream.Pos())
+	return ss.Ack(ss.stream.Len())
 }
 
 func (ss *Session) Ack(length int) error {
@@ -115,15 +115,21 @@ func (ss *Session) sendData(pos int, data []byte) error {
 	return err
 }
 
-// we should check for lines, and chunk out full lines into our sendStream
+// we should check for lines, and chunk out full lines into our stream
 func (ss *Session) checkLines() {
-	if !bytes.Contains(ss.recvStream.Buf(), []byte("\n")) {
-		return
-	}
-	for line := range bytes.Lines(ss.recvStream.Buf()) {
+	for {
+		line, pos, ok := ss.stream.Readline()
+		if !ok {
+			break
+		}
+
 		b := reverseBytes(line)
-		ss.log.Debug().Bytes("reverse", b).Bytes("line", line).Msg("check lines")
-		err := ss.sendData(ss.sendStream.Pos(), b)
+		ss.log.Debug().
+			Bytes("reverse", b).
+			Bytes("line", line).
+			Msg("check lines")
+
+		err := ss.sendData(pos, b)
 		if err != nil {
 			ss.log.Err(err).EmbedObject(ss).Msg("sending data msg")
 		}
@@ -138,7 +144,6 @@ func (ss *Session) resetTimer() {
 func (ss *Session) MarshalZerologObject(e *zerolog.Event) {
 	e.Int("session", ss.ID).
 		Stringer("addr", ss.Addr).
-		Object("recvStream", ss.recvStream).
-		Object("sendStream", ss.sendStream).
+		Object("stream", ss.stream).
 		Dur("lastSeen", time.Since(ss.lastSeen).Round(zerolog.DurationFieldUnit))
 }

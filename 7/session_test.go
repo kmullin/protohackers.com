@@ -56,7 +56,7 @@ func runTranscript(t *testing.T, client *net.UDPConn, steps []Step) {
 
 		for ii, expect := range step.Expect {
 			n, _, err := client.ReadFromUDP(buf)
-			assert.NoErrorf(t, err, "step %d read failed", i)
+			assert.NoErrorf(t, err, "step %d expect %v read failed", i, ii)
 
 			msg, err := message.New(buf[:n])
 			assert.NoErrorf(t, err, "step %d expect %v unmarshal failed", i, ii)
