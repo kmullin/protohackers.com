@@ -30,13 +30,6 @@ func (s *stream) Len() int {
 	return len(s.buf)
 }
 
-// UnreadBuf returns a copy of the buffer
-func (s *stream) UnreadBuf(b []byte) int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return copy(b, s.buf[s.readPos:])
-}
-
 func (s *stream) Readline() (line []byte, pos int, fullLine bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
