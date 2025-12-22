@@ -58,9 +58,9 @@ func (ss *Session) InsertData(m *message.Data) error {
 
 	log := ss.log.With().Object("msg", m).Logger()
 
-	if m.Pos < ss.stream.UnreadLen() {
+	if m.Pos < ss.stream.Len() {
 		log.Debug().EmbedObject(ss).
-			Msgf("already read data to POS %v", ss.stream.UnreadLen())
+			Msgf("already read data to POS %v", ss.stream.Len())
 		return ss.sendPrevAck()
 	}
 
