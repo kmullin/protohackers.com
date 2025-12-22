@@ -31,9 +31,8 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 		conn.Close()
 	}()
 
+	buf := make([]byte, message.MaxSize)
 	for {
-		buf := make([]byte, message.MaxSize)
-
 		log := s.log
 		n, addr, err := conn.ReadFrom(buf)
 		if addr != nil {
