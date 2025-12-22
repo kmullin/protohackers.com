@@ -9,7 +9,7 @@ COPY go.mod go.sum .
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 go build -race -o /usr/local/bin/app ./$problem
+RUN go build -o /usr/local/bin/app ./$problem
 
 FROM debian:trixie
 # RUN apk --no-cache add ca-certificates
