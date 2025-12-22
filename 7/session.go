@@ -41,8 +41,7 @@ func NewSession(id int, addr net.Addr, pc net.PacketConn, logger zerolog.Logger)
 	}
 	ss.ttl = time.AfterFunc(sessionTimeout, func() {
 		ss.log.Info().EmbedObject(ss).Msg("session expired")
-		err := ss.Close()
-		if err != nil {
+		if err := ss.Close(); err != nil {
 			ss.log.Err(err).EmbedObject(ss).Msg("err sending close")
 		}
 	})
@@ -58,7 +57,7 @@ func (ss *Session) InsertData(m *message.Data) error {
 
 	log := ss.log.With().Object("msg", m).Logger()
 
-	if m.Pos < ss.stream.Len() {
+	if (m.Pos + len(m.Data)) <= ss.stream.Len() {
 		log.Debug().EmbedObject(ss).
 			Msgf("already read data to POS %v", ss.stream.Len())
 		return ss.sendPrevAck()
@@ -66,8 +65,7 @@ func (ss *Session) InsertData(m *message.Data) error {
 
 	// unescape data payload
 	data := unescapeData(m.Data)
-	_, err := ss.stream.WriteAt(data, int64(m.Pos))
-	if err != nil {
+	if _, err := ss.stream.WriteAt(data, int64(m.Pos)); err != nil {
 		log.Error().Err(err).Msg("err writing at")
 	}
 
@@ -129,8 +127,7 @@ func (ss *Session) checkLines() {
 			Bytes("line", line).
 			Msg("check lines")
 
-		err := ss.sendData(pos, b)
-		if err != nil {
+		if err := ss.sendData(pos, b); err != nil {
 			ss.log.Err(err).EmbedObject(ss).Msg("sending data msg")
 		}
 	}

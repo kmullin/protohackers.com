@@ -48,12 +48,14 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 			continue
 		}
 
-		log.Debug().Int("len", n).Bytes("bytes", buf[:n]).Msg("read")
-
 		// read our message, any invalid message returns an error
 		msg, err := message.New(buf[:n])
 		if err != nil {
-			log.Error().Err(err).Msg("err creating msg")
+			log.Error().
+				Err(err).
+				Int("len", n).
+				Bytes("bytes", buf[:n]).
+				Msg("err creating msg")
 			continue
 		}
 
@@ -67,8 +69,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 			}
 
 			// will send to the same addr associated with session
-			err := ss.Ack(0)
-			if err != nil {
+			if err := ss.Ack(0); err != nil {
 				log.Error().Err(err).Msg("writing ack")
 				continue
 			}
@@ -78,16 +79,16 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 			ss := s.sc.Get(m.SessionID)
 			// If the session is not open: send /close/SESSION/ and stop
 			if ss == nil {
+				ss = NewSession(m.SessionID, addr, conn, s.log)
 				log.Debug().Int("id", m.SessionID).
 					Msg("couldnt find session, closing")
-				err := ss.Close()
-				if err != nil {
+				if err := ss.Close(); err != nil {
 					log.Error().Err(err).Msg("err writing close msg")
 				}
 				continue
 			}
-			err := ss.InsertData(m)
-			if err != nil {
+
+			if err := ss.InsertData(m); err != nil {
 				log.Error().Err(err).Msg("adding data to session")
 			}
 		case *message.Ack:
@@ -96,10 +97,10 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 			ss := s.sc.Get(m.SessionID)
 			// If the session is not open: send /close/SESSION/ and stop
 			if ss == nil {
+				ss = NewSession(m.SessionID, addr, conn, s.log)
 				log.Debug().Int("id", m.SessionID).
 					Msg("couldnt find session, closing")
-				err := ss.Close()
-				if err != nil {
+				if err := ss.Close(); err != nil {
 					log.Error().Err(err).Msg("err writing close msg")
 				}
 				continue
@@ -114,8 +115,7 @@ func (s *Server) HandleUDP(conn net.PacketConn) {
 		case *message.Close:
 			ss := s.sc.Get(m.SessionID)
 			if ss != nil {
-				err := ss.Close()
-				if err != nil {
+				if err := ss.Close(); err != nil {
 					log.Error().Err(err).Msg("err writing close msg")
 				}
 			}
