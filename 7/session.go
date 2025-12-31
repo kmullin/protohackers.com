@@ -19,8 +19,9 @@ type Session struct {
 	ID   int
 	Addr net.Addr
 
-	stream *stream
+	stream *stream // our stream of data unescaped
 
+	tracker *AckTracker
 	prevAck *message.Ack
 
 	ttl      *time.Timer // our expire timer
@@ -34,7 +35,9 @@ func NewSession(id int, addr net.Addr, pc net.PacketConn, logger zerolog.Logger)
 		PacketConn: pc,
 		ID:         id,
 		Addr:       addr,
-		stream:     &stream{},
+
+		stream:  &stream{},
+		tracker: newAckTracker(),
 
 		lastSeen: time.Now(),
 		log:      logger.With().Int("session", id).Stringer("addr", addr).Logger(),
